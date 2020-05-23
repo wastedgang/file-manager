@@ -27,12 +27,15 @@ type DatabaseInfo struct {
 }
 
 func (d *DatabaseInfo) DBSource() string {
+	timeout := 5
 	if d.Type == databasetype.MySQL {
-		return fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=true", d.Username, d.Password, d.Address, d.DatabaseName)
+		return fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&parseTime=true&timeout=%ds",
+			d.Username, d.Password, d.Address, d.DatabaseName, timeout)
 	} else {
 		wd, _ := os.Getwd()
 		sqlitePath := filepath.Join(wd, SQLiteFilename)
-		return fmt.Sprintf("%s?auth&_auth_user=admin&_auth_pass=%s&_auth_crypt=sha1", sqlitePath, d.Password)
+		return fmt.Sprintf("%s?auth&_auth_user=admin&_auth_pass=%s&_auth_crypt=sha1&timeout=%ds",
+			sqlitePath, d.Password, timeout)
 	}
 }
 

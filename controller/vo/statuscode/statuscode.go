@@ -16,7 +16,7 @@ var (
 
 	InvalidUsernameOrPassword = &Response{Code: "002001", Message: "用户名不存在或密码错误"}
 	UserNotExists             = &Response{Code: "002002", Message: "用户不存在"}
-	UserExists                = &Response{Code: "002003", Message: "用户已存在"}
+	UsernameExists                = &Response{Code: "002003", Message: "用户名已存在"}
 	InvalidPassword           = &Response{Code: "002004", Message: "密码错误"}
 	CannotDeleteCurrentUser   = &Response{Code: "002005", Message: "不能删除自己"}
 

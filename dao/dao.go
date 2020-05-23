@@ -26,7 +26,7 @@ func InitDatabase() error {
 	if err != nil {
 		return err
 	}
-
+	
 	switch config.Database.Type {
 	case databasetype.MySQL:
 		DB, err = gorm.Open("mysql", config.Database.DBSource())

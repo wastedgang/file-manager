@@ -103,21 +103,15 @@ func (u *UserService) GetById(userId int) *model.User {
 	return &user
 }
 
-//// ListAll 获取所有用户信息
-//func (u *UserService) ListAll() []*model.User {
-//	var selectResult []entity.User
-//	if err := dao.DB.Find(&selectResult).Error; err != nil {
-//		panic(err)
-//	}
-//
-//	users := make([]*model.User, len(selectResult))
-//	for i, user := range selectResult {
-//		users[i] = new(model.User)
-//		users[i].FromEntity(&user)
-//	}
-//	return users
-//}
-//
+// ListAll 获取所有用户信息
+func (u *UserService) ListAll() []*model.User {
+	var users []*model.User
+	if err := dao.DB.Find(&users).Error; err != nil {
+		panic(err)
+	}
+	return users
+}
+
 //// ListByIds 获取指定用户ID列表的用户信息
 //func (u *UserService) ListByIds(userIds []int) []*model.User {
 //	panic("implement me")
@@ -176,67 +170,66 @@ func (u *UserService) AddDefaultSystemAdmin() (*model.User, error) {
 	return &user, nil
 }
 
-//// Add 添加新用户
-//func (u *UserService) Add(username, remark, homeDirectory string) (*model.User, error) {
-//	now := time.Now()
-//	userEntity := entity.User{
-//		Type:          model.UserTypeNormal.Value(),
-//		Username:      username,
-//		Password:      u.CalculateHashPassword(DefaultUserPassword),
-//		Nickname:      "",
-//		Remark:        remark,
-//		HomeDirectory: homeDirectory,
-//		UpdateTime:    now,
-//		CreateTime:    now,
-//	}
-//	if err := dao.DB.Create(&userEntity).Error; err != nil {
-//		return nil, err
-//	}
-//	return (&model.User{}).FromEntity(&userEntity), nil
-//}
-//
-//// DeleteById 删除用户
-//func (u *UserService) DeleteById(userId int) error {
-//	// TODO: 删除用户分享的
-//
-//	// TODO: 删除分享给用户的
-//
-//	// TODO: 删除拥有的群组
-//
-//	// TODO: 退出其他群组
-//
-//	// TODO: 通知更新share_record表的target_content
-//
-//	// TODO: 删除用户
-//	panic("implement me")
-//}
-//
-//// Update 更新指定用户信息
-//func (u *UserService) Update(userId int, nickname, remark string) (*model.User, error) {
-//	user := entity.User{Id: userId}
-//
-//	updates := map[string]interface{}{
-//		"nickname": nickname,
-//		"remark":   remark,
-//	}
-//	if err := dao.DB.Model(&user).Updates(updates).Error; err != nil {
-//		return nil, err
-//	}
-//	return u.GetById(userId), nil
-//}
-//
-//// UpdateUserPassword 更新指定用户的密码
-//func (u *UserService) UpdateUserPassword(userId int, password string) error {
-//	user := entity.User{Id: userId}
-//
-//	updates := map[string]interface{}{
-//		"password": u.CalculateHashPassword(password),
-//	}
-//	if err := dao.DB.Model(&user).Updates(updates).Error; err != nil {
-//		return err
-//	}
-//	return nil
-//}
+// Add 添加新用户
+func (u *UserService) Add(username, remark string) (*model.User, error) {
+	now := time.Now()
+	user := model.User{
+		Type:       usertype.Normal,
+		Username:   username,
+		Password:   u.CalculateHashPassword(DefaultUserPassword),
+		Nickname:   "",
+		Remark:     remark,
+		UpdateTime: now,
+		CreateTime: now,
+	}
+	if err := dao.DB.Create(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// DeleteById 删除用户
+func (u *UserService) DeleteById(userId int) error {
+	// TODO: 删除用户分享的
+
+	// TODO: 删除分享给用户的
+
+	// TODO: 删除拥有的群组
+
+	// TODO: 退出其他群组
+
+	// TODO: 通知更新share_record表的target_content
+
+	// TODO: 删除用户
+	panic("implement me")
+}
+
+// Update 更新指定用户信息
+func (u *UserService) Update(userId int, nickname, remark string) error {
+	user := model.User{Id: userId}
+
+	updates := map[string]interface{}{
+		"nickname": nickname,
+		"remark":   remark,
+	}
+	if err := dao.DB.Model(&user).Updates(updates).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateUserPassword 更新指定用户的密码
+func (u *UserService) UpdateUserPassword(userId int, password string) error {
+	user := model.User{Id: userId}
+
+	updates := map[string]interface{}{
+		"password": u.CalculateHashPassword(password),
+	}
+	if err := dao.DB.Model(&user).Updates(updates).Error; err != nil {
+		return err
+	}
+	return nil
+}
 
 // AddLoginRecord 添加用户登录记录
 func (u *UserService) AddLoginRecord(user *model.User, source string) error {
