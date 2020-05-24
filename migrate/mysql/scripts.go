@@ -27,7 +27,7 @@ var migrations = []*migrate.MigrationScript{
 	},
 	{
 		Version:    2,
-		Identifier: "create_user_login_record",
+		Identifier: "create_user_login_record_table",
 		UpScript: "CREATE TABLE `user_login_record` (\n" +
 			"`id` int NOT NULL AUTO_INCREMENT COMMENT '登录记录id',\n" +
 			"`user_id` int NOT NULL COMMENT '用户id',\n" +
@@ -38,6 +38,20 @@ var migrations = []*migrate.MigrationScript{
 			"KEY `index_source`(`source`)\n" +
 			") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n",
 		DownScript: "DROP TABLE `user_login_record`\n",
+	},
+	{
+		Version:    3,
+		Identifier: "create_store_space_table",
+		UpScript: "CREATE TABLE `store_space` (\n" +
+			"`id` int NOT NULL AUTO_INCREMENT COMMENT '存储空间ID',\n" +
+			"`directory_path` varchar(512) NOT NULL COMMENT '存储目录路径',\n" +
+			"`allocate_size` bigint NOT NULL COMMENT '分配空间大小',\n" +
+			"`remark` varchar(128) NOT NULL DEFAULT '' COMMENT '备注',\n" +
+			"`create_time` datetime NOT NULL COMMENT '创建时间',\n" +
+			"PRIMARY KEY(`id`),\n" +
+			"UNIQUE KEY `index_directory_path`(`directory_path`)\n" +
+			") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n",
+		DownScript: "DROP TABLE `store_space`\n",
 	},
 	//{
 	//	Version:    3,

@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/farseer810/file-manager/dao"
 	"github.com/farseer810/file-manager/inject"
@@ -104,9 +105,16 @@ func (u *UserService) GetById(userId int) *model.User {
 }
 
 // ListAll 获取所有用户信息
-func (u *UserService) ListAll() []*model.User {
+func (u *UserService) List(searchWord string) []*model.User {
+	var err error
 	var users []*model.User
-	if err := dao.DB.Find(&users).Error; err != nil {
+	if searchWord == "" {
+		err = dao.DB.Find(&users).Error
+	} else {
+		matchString := fmt.Sprintf("%s%%", searchWord)
+		err = dao.DB.Where("`username` LIKE ? OR `nickname` LIKE ?", matchString, matchString).Find(&users).Error
+	}
+	if err != nil {
 		panic(err)
 	}
 	return users
@@ -190,6 +198,7 @@ func (u *UserService) Add(username, remark string) (*model.User, error) {
 
 // DeleteById 删除用户
 func (u *UserService) DeleteById(userId int) error {
+	var err error
 	// TODO: 删除用户分享的
 
 	// TODO: 删除分享给用户的
@@ -201,7 +210,11 @@ func (u *UserService) DeleteById(userId int) error {
 	// TODO: 通知更新share_record表的target_content
 
 	// TODO: 删除用户
-	panic("implement me")
+	user := &model.User{Id: userId}
+	if err = dao.DB.Delete(user).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 // Update 更新指定用户信息

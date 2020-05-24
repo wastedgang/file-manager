@@ -44,14 +44,15 @@ func InitRoutes(r *gin.Engine) error {
 		v1.PATCH("/user/:user_id/password", RequireSystemAdmin(), userController.UpdateUserPassword())
 		v1.DELETE("/user/:user_id", RequireSystemAdmin(), userController.DeleteUser())
 		v1.GET("/users", RequireLogin(), userController.ListUsers())
-		v1.GET("/current_user/info", RequireSystemAdmin(), userController.GetCurrentUser())
-		v1.PUT("/current_user/info", RequireSystemAdmin(), userController.UpdateCurrentUserInfo())
-		v1.PATCH("/current_user/password", RequireSystemAdmin(), userController.UpdateCurrentUserPassword())
+		v1.GET("/user/:user_id/info", RequireSystemAdmin(), userController.GetUserInfo())
+		v1.GET("/current_user/info", RequireLogin(), userController.GetCurrentUser())
+		v1.PUT("/current_user/info", RequireLogin(), userController.UpdateCurrentUserInfo())
+		v1.PATCH("/current_user/password", RequireLogin(), userController.UpdateCurrentUserPassword())
 
 		// 存储空间管理
 		v1.POST("/store_space", RequireSystemAdmin(), storeSpaceController.AddStoreSpace())
 		v1.DELETE("/store_space", RequireSystemAdmin(), storeSpaceController.DeleteStoreSpace())
-		v1.POST("/store_spaces", RequireSystemAdmin(), storeSpaceController.ListStoreSpaces())
+		v1.GET("/store_spaces", RequireSystemAdmin(), storeSpaceController.ListStoreSpaces())
 	}
 
 	return nil

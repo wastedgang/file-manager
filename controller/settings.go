@@ -111,7 +111,7 @@ func (s *SettingsController) SetDatabaseSettings() gin.HandlerFunc {
 		}
 
 		// 迁移sql
-		err = dao.InitDatabase()
+		err = dao.InitDatabase(false)
 		if err != nil {
 			return DatabaseConnectFail
 		}

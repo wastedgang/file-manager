@@ -18,7 +18,7 @@ var (
 	DB                     *gorm.DB
 )
 
-func InitDatabase() error {
+func InitDatabase(enableLogMode bool) error {
 	if DB != nil {
 		return nil
 	}
@@ -26,7 +26,7 @@ func InitDatabase() error {
 	if err != nil {
 		return err
 	}
-	
+
 	switch config.Database.Type {
 	case databasetype.MySQL:
 		DB, err = gorm.Open("mysql", config.Database.DBSource())
@@ -39,6 +39,7 @@ func InitDatabase() error {
 		return err
 	}
 
+	DB.LogMode(enableLogMode)
 	inject.Provide(DB)
 	return nil
 }

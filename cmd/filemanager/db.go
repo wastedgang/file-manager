@@ -11,7 +11,7 @@ func migrateDatabase() error {
 		return nil
 	}
 
-	err = dao.InitDatabase()
+	err = dao.InitDatabase(isDebug)
 	if err != nil {
 		return err
 	}

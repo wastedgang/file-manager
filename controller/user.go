@@ -112,7 +112,7 @@ func (u *UserController) UpdateUserPassword() gin.HandlerFunc {
 	handler := ConvertGinHandlerFunc(func(ctx *gin.Context) *Response {
 		var err error
 		var form struct {
-			Password string `form:"password" binding:"required min=6"`
+			Password string `form:"password" binding:"required,min=6"`
 		}
 		if err = ctx.ShouldBind(&form); err != nil {
 			return BadRequest
@@ -146,7 +146,7 @@ func (u *UserController) UpdateCurrentUserPassword() gin.HandlerFunc {
 		var err error
 		var form struct {
 			OldPassword string `form:"old_password" binding:"required"`
-			NewPassword string `form:"old_password" binding:"required min=6"`
+			NewPassword string `form:"new_password" binding:"required,min=6"`
 		}
 		if err = ctx.ShouldBind(&form); err != nil {
 			return BadRequest
@@ -154,6 +154,10 @@ func (u *UserController) UpdateCurrentUserPassword() gin.HandlerFunc {
 
 		// 检查权限
 		currentUser := u.UserService.GetCurrentUser(ctx)
+		currentUser = u.UserService.GetById(currentUser.Id)
+		if currentUser == nil {
+			return UserNotExists
+		}
 		if currentUser.Password != u.UserService.CalculateHashPassword(form.OldPassword) {
 			return InvalidPassword
 		}
@@ -199,7 +203,15 @@ func (u *UserController) DeleteUser() gin.HandlerFunc {
 // ListUsers 获取用户列表
 func (u *UserController) ListUsers() gin.HandlerFunc {
 	handler := ConvertGinHandlerFunc(func(ctx *gin.Context) *Response {
-		users := u.UserService.ListAll()
+		var err error
+		var form struct {
+			SearchWord string `form:"search_word"`
+		}
+		if err = ctx.ShouldBind(&form); err != nil {
+			return BadRequest
+		}
+
+		users := u.UserService.List(form.SearchWord)
 		return Success.AddField("users", users)
 	})
 	return handler
@@ -209,6 +221,24 @@ func (u *UserController) ListUsers() gin.HandlerFunc {
 func (u *UserController) GetCurrentUser() gin.HandlerFunc {
 	handler := ConvertGinHandlerFunc(func(ctx *gin.Context) *Response {
 		user := u.UserService.GetCurrentUser(ctx)
+		user = u.UserService.GetById(user.Id)
+		if user == nil {
+			return UserNotExists
+		}
+		return Success.AddField("user", user)
+	})
+	return handler
+}
+
+// GetUserInfo 获取指定用户
+func (u *UserController) GetUserInfo() gin.HandlerFunc {
+	handler := ConvertGinHandlerFunc(func(ctx *gin.Context) *Response {
+		// 检查用户是否存在
+		userId, _ := strconv.Atoi(ctx.Param("user_id"))
+		user := u.UserService.GetById(userId)
+		if user == nil {
+			return UserNotExists
+		}
 		return Success.AddField("user", user)
 	})
 	return handler

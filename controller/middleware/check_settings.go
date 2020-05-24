@@ -26,7 +26,7 @@ func CheckConfigurationHandler() gin.HandlerFunc {
 			ctx.JSON(200, SystemNotInitialized)
 			return
 		}
-		err = dao.InitDatabase()
+		err = dao.InitDatabase(false)
 		if err != nil || dao.DB == nil {
 			ctx.JSON(200, DatabaseConnectFail)
 			return

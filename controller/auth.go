@@ -50,6 +50,12 @@ func (a *AuthController) Login() gin.HandlerFunc {
 			return InvalidUsernameOrPassword
 		}
 
+		// 生成jwt的token
+		token, err := a.UserService.GenerateToken(user)
+		if err != nil {
+			return InternalServerError
+		}
+
 		// 添加登录记录
 		err = a.UserService.AddLoginRecord(user, form.Source)
 		if err != nil {
@@ -57,11 +63,6 @@ func (a *AuthController) Login() gin.HandlerFunc {
 		}
 
 		// 保存jwt到cookies
-		token, err := a.UserService.GenerateToken(user)
-		if err != nil {
-			return InternalServerError
-		}
-
 		ctx.SetCookie(service.TokenCookieKey, token, 0, "/", "", false, true)
 		return Success
 	})
