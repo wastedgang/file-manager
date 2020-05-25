@@ -44,7 +44,7 @@ var migrations = []*migrate.MigrationScript{
 		Identifier: "create_store_space_table",
 		UpScript: "CREATE TABLE `store_space` (\n" +
 			"`id` int NOT NULL AUTO_INCREMENT COMMENT '存储空间ID',\n" +
-			"`directory_path` varchar(512) NOT NULL COMMENT '存储目录路径',\n" +
+			"`directory_path` varchar(256) NOT NULL COMMENT '存储目录路径',\n" +
 			"`allocate_size` bigint NOT NULL COMMENT '分配空间大小',\n" +
 			"`remark` varchar(128) NOT NULL DEFAULT '' COMMENT '备注',\n" +
 			"`create_time` datetime NOT NULL COMMENT '创建时间',\n" +
@@ -52,6 +52,67 @@ var migrations = []*migrate.MigrationScript{
 			"UNIQUE KEY `index_directory_path`(`directory_path`)\n" +
 			") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n",
 		DownScript: "DROP TABLE `store_space`\n",
+	},
+	{
+		Version:    4,
+		Identifier: "create_store_file_info_table",
+		UpScript: "CREATE TABLE `store_file_info` (\n" +
+			"`id` int NOT NULL AUTO_INCREMENT COMMENT 'ID',\n" +
+			"`content_hash` varchar(64) NOT NULL COMMENT '内容hash',\n" +
+			"`store_directory_path` varchar(256) NOT NULL COMMENT '存储目录路径',\n" +
+			"`store_filename` varchar(256) NOT NULL COMMENT '存储文件名',\n" +
+			"`file_size` bigint NOT NULL COMMENT '文件大小',\n" +
+			"`mime_type` varchar(32) NOT NULL COMMENT 'MIME类型',\n" +
+			"`create_time` datetime NOT NULL COMMENT '创建时间',\n" +
+			"PRIMARY KEY(`id`),\n" +
+			"UNIQUE KEY `unique_content_hash`(`content_hash`),\n" +
+			"KEY `index_store_directory_path`(`store_directory_path`)\n" +
+			") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n",
+		DownScript: "DROP TABLE `store_space`\n",
+	},
+	{
+		Version:    5,
+		Identifier: "create_file_info_table",
+		UpScript: "CREATE TABLE `file_info` (\n" +
+			"`id` int NOT NULL AUTO_INCREMENT COMMENT 'ID',\n" +
+			"`content_hash` varchar(64) NOT NULL COMMENT '内容hash',\n" +
+			"`user_id` int NOT NULL COMMENT '用户ID',\n" +
+			"`type` varchar(32) NOT NULL COMMENT '文件类型',\n" +
+			"`directory_path` varchar(256) NOT NULL COMMENT '存储目录路径',\n" +
+			"`filename` varchar(256) NOT NULL COMMENT '存储文件名',\n" +
+			"`file_size` bigint NOT NULL COMMENT '文件大小',\n" +
+			"`mime_type` varchar(32) NOT NULL COMMENT 'MIME类型',\n" +
+			"`update_time` datetime NOT NULL COMMENT '更新时间',\n" +
+			"`create_time` datetime NOT NULL COMMENT '创建时间',\n" +
+			"PRIMARY KEY(`id`),\n" +
+			"UNIQUE KEY `unique_file`(`user_id`, `directory_path`, `filename`),\n" +
+			"KEY `index_directory_path`(`directory_path`),\n" +
+			"KEY `index_user_id`(`user_id`),\n" +
+			"KEY `index_type`(`type`),\n" +
+			"KEY `index_update_time`(`update_time`),\n" +
+			"KEY `index_content_hash`(`content_hash`)\n" +
+			") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n",
+		DownScript: "DROP TABLE `file_info`\n",
+	},
+	{
+		Version:    6,
+		Identifier: "create_ongoing_upload_info_table",
+		UpScript: "CREATE TABLE `ongoing_upload_info` (\n" +
+			"`id` int NOT NULL AUTO_INCREMENT COMMENT 'ID',\n" +
+			"`content_hash` varchar(64) NOT NULL COMMENT '内容hash',\n" +
+			"`user_id` int NOT NULL COMMENT '用户ID',\n" +
+			"`directory_path` varchar(256) NOT NULL COMMENT '存储目录路径',\n" +
+			"`filename` varchar(256) NOT NULL COMMENT '存储文件名',\n" +
+			"`mime_type` varchar(32) NOT NULL COMMENT 'MIME类型',\n" +
+			"`create_time` datetime NOT NULL COMMENT '创建时间',\n" +
+			"PRIMARY KEY(`id`),\n" +
+			"UNIQUE KEY `unique_file`(`directory_path`, `filename`),\n" +
+			"UNIQUE KEY `unique_user_content_hash`(`user_id`, `content_hash`),\n" +
+			"KEY `index_directory_path`(`directory_path`),\n" +
+			"KEY `index_user_id`(`user_id`),\n" +
+			"KEY `index_content_hash`(`content_hash`)\n" +
+			") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n",
+		DownScript: "DROP TABLE `ongoing_upload_info`\n",
 	},
 	//{
 	//	Version:    3,

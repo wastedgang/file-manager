@@ -26,5 +26,10 @@ var (
 	FileExists         = &Response{Code: "003004", Message: "文件已存在"}
 
 	StoreSpaceNotExists = &Response{Code: "004001", Message: "存储空间不存在"}
-	StoreSpaceExists = &Response{Code: "004002", Message: "存储空间已存在"}
+	StoreSpaceExists    = &Response{Code: "004002", Message: "存储空间已存在"}
+	NoStoreSpace        = &Response{Code: "004003", Message: "请先添加存储空间"}
+	NotEnoughFreeSpace  = &Response{Code: "004004", Message: "剩余空间不足"}
+
+	UploadFailed            = &Response{Code: "005001", Message: "上传失败"}
+	InvalidUploadStartPoint = &Response{Code: "005002", Message: "上传文件开始位置错误"}
 )

@@ -23,6 +23,7 @@ func (s *server) Run() error {
 // GetServer 初始化server
 func GetServer(isDebug bool, listenPort int) Server {
 	r := gin.New()
+	r.MaxMultipartMemory = 200 << 30 // 200GB上传大小
 	if isDebug {
 		gin.SetMode(gin.DebugMode)
 	} else {

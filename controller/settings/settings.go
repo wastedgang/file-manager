@@ -1,4 +1,4 @@
-package controller
+package settings
 
 import (
 	. "github.com/farseer810/file-manager/controller/vo/statuscode"

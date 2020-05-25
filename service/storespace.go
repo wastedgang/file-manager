@@ -68,5 +68,23 @@ func (s *StoreSpaceService) List() []*model.StoreSpace {
 
 	// TODO: 计算空间文件数量
 	// TODO: 计算空间文件剩余空间
+	for _, storeSpace := range storeSpaces {
+		storeSpace.TotalFreeSpace = 1 << 30
+	}
 	return storeSpaces
+}
+
+// GetBestStoreSpace 计算剩余空间最大的存储空间
+func (s *StoreSpaceService) GetBestStoreSpace() *model.StoreSpace {
+	storeSpaces := s.List()
+	if len(storeSpaces) == 0 {
+		return nil
+	}
+	bestStoreSpace := storeSpaces[0]
+	for i := 1; i < len(storeSpaces); i++ {
+		if bestStoreSpace.TotalFreeSpace < storeSpaces[i].TotalFreeSpace {
+			bestStoreSpace = storeSpaces[i]
+		}
+	}
+	return bestStoreSpace
 }

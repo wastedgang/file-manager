@@ -1,4 +1,4 @@
-package controller
+package user
 
 import (
 	. "github.com/farseer810/file-manager/controller/vo/statuscode"
@@ -154,10 +154,6 @@ func (u *UserController) UpdateCurrentUserPassword() gin.HandlerFunc {
 
 		// 检查权限
 		currentUser := u.UserService.GetCurrentUser(ctx)
-		currentUser = u.UserService.GetById(currentUser.Id)
-		if currentUser == nil {
-			return UserNotExists
-		}
 		if currentUser.Password != u.UserService.CalculateHashPassword(form.OldPassword) {
 			return InvalidPassword
 		}

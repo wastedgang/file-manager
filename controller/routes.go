@@ -1,22 +1,29 @@
 package controller
 
 import (
+	"github.com/farseer810/file-manager/controller/auth"
 	"github.com/farseer810/file-manager/controller/middleware"
+	"github.com/farseer810/file-manager/controller/myspace"
+	"github.com/farseer810/file-manager/controller/settings"
+	"github.com/farseer810/file-manager/controller/storespace"
+	"github.com/farseer810/file-manager/controller/user"
 	"github.com/farseer810/file-manager/inject"
 	"github.com/gin-gonic/gin"
 )
 
 // InitRoutes 配置路由
 func InitRoutes(r *gin.Engine) error {
-	var settingsController *SettingsController
-	var userController *UserController
-	var authController *AuthController
-	var storeSpaceController *StoreSpaceController
+	var settingsController *settings.SettingsController
+	var userController *user.UserController
+	var authController *auth.AuthController
+	var storeSpaceController *storespace.StoreSpaceController
+	var mySpaceController *myspace.MySpaceController
 	err := inject.Get(
 		&settingsController,
 		&userController,
 		&authController,
 		&storeSpaceController,
+		&mySpaceController,
 	)
 	if err != nil {
 		return err
@@ -53,6 +60,22 @@ func InitRoutes(r *gin.Engine) error {
 		v1.POST("/store_space", RequireSystemAdmin(), storeSpaceController.AddStoreSpace())
 		v1.DELETE("/store_space", RequireSystemAdmin(), storeSpaceController.DeleteStoreSpace())
 		v1.GET("/store_spaces", RequireSystemAdmin(), storeSpaceController.ListStoreSpaces())
+
+		// 个人空间管理
+		v1.GET("/my_space/files", RequireLogin(), mySpaceController.List())
+		v1.POST("/my_space/directory", RequireLogin(), mySpaceController.AddDirectory())
+		v1.DELETE("/my_space/file", RequireLogin(), mySpaceController.Delete())
+		v1.PUT("/my_space/file", RequireLogin(), mySpaceController.Rename())
+		v1.POST("/my_space/file/copy", RequireLogin(), mySpaceController.Copy())
+		v1.POST("/my_space/file/move", RequireLogin(), mySpaceController.Move())
+		v1.POST("/my_space/file/share", RequireLogin(), mySpaceController.Share())
+
+		// 个人空间上传
+		v1.POST("/my_space/file/upload/*upload_directory_path", RequireLogin(), mySpaceController.Upload())
+		v1.GET("/my_space/file/upload/start_point", RequireLogin(), mySpaceController.GetUploadStartPoint())
+
+		// 个人空间下载
+		v1.GET("/my_space/file/download/*download_file_path", RequireLogin(), mySpaceController.Download())
 	}
 
 	return nil
