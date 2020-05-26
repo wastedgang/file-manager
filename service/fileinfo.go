@@ -12,13 +12,13 @@ import (
 )
 
 func init() {
-	inject.Provide(new(MySpaceService))
+	inject.Provide(new(FileInfoService))
 }
 
-type MySpaceService struct {
+type FileInfoService struct {
 }
 
-func (s *MySpaceService) List(userId int, directoryPath string, searchWord string) []*model.FileInfo {
+func (s *FileInfoService) List(userId int, directoryPath string, searchWord string) []*model.FileInfo {
 	var err error
 	var fileInfos []*model.FileInfo
 
@@ -35,7 +35,7 @@ func (s *MySpaceService) List(userId int, directoryPath string, searchWord strin
 	return fileInfos
 }
 
-func (s *MySpaceService) IsDirectoryExists(userId int, path string) bool {
+func (s *FileInfoService) IsDirectoryExists(userId int, path string) bool {
 	// 忽略根目录
 	if path == "/" {
 		return true
@@ -45,7 +45,7 @@ func (s *MySpaceService) IsDirectoryExists(userId int, path string) bool {
 	return fileInfo != nil && fileInfo.Type == fileinfotype.Directory
 }
 
-func (s *MySpaceService) Get(userId int, path string) *model.FileInfo {
+func (s *FileInfoService) Get(userId int, path string) *model.FileInfo {
 	// 计算所在目录路径和文件名
 	var err error
 	path, err = filepath.Abs(filepath.Clean(path))
@@ -66,7 +66,7 @@ func (s *MySpaceService) Get(userId int, path string) *model.FileInfo {
 	return &fileInfo
 }
 
-func (s *MySpaceService) CreateDirectory(userId int, path string) error {
+func (s *FileInfoService) CreateDirectory(userId int, path string) error {
 	// 忽略根目录
 	var err error
 	path, err = filepath.Abs(filepath.Clean(path))
@@ -98,7 +98,7 @@ func (s *MySpaceService) CreateDirectory(userId int, path string) error {
 	return nil
 }
 
-func (s *MySpaceService) Rename(oldFileInfo *model.FileInfo, newFilename string) error {
+func (s *FileInfoService) Rename(oldFileInfo *model.FileInfo, newFilename string) error {
 	var err error
 	// 开事务
 	tx := dao.DB.Begin()

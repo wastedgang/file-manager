@@ -16,7 +16,7 @@ func init() {
 
 type MySpaceController struct {
 	UserService          *service.UserService
-	MySpaceService       *service.MySpaceService
+	FileInfoService      *service.FileInfoService
 	StoreSpaceService    *service.StoreSpaceService
 	StoreFileService     *service.StoreFileService
 	OngoingUploadService *service.OngoingUploadService
@@ -52,16 +52,16 @@ func (m *MySpaceController) AddDirectory() gin.HandlerFunc {
 
 		currentUser := m.UserService.GetCurrentUser(ctx)
 		// 检查文件夹是否存在
-		if !m.MySpaceService.IsDirectoryExists(currentUser.Id, directoryPath) {
+		if !m.FileInfoService.IsDirectoryExists(currentUser.Id, directoryPath) {
 			return DirectoryNotExists
 		}
 
 		// 检查文件是否已存在
-		if m.MySpaceService.Get(currentUser.Id, filepath.Join(directoryPath, form.Filename)) != nil {
+		if m.FileInfoService.Get(currentUser.Id, filepath.Join(directoryPath, form.Filename)) != nil {
 			return FileExists
 		}
 
-		err = m.MySpaceService.CreateDirectory(currentUser.Id, filepath.Join(directoryPath, form.Filename))
+		err = m.FileInfoService.CreateDirectory(currentUser.Id, filepath.Join(directoryPath, form.Filename))
 		if err != nil {
 			return InternalServerError
 		}
@@ -78,7 +78,7 @@ func (m *MySpaceController) List() gin.HandlerFunc {
 			directoryPath = "/"
 		}
 		currentUser := m.UserService.GetCurrentUser(ctx)
-		fileInfos := m.MySpaceService.List(currentUser.Id, directoryPath, searchWord)
+		fileInfos := m.FileInfoService.List(currentUser.Id, directoryPath, searchWord)
 		return Success.AddField("files", fileInfos)
 	})
 	return handler
@@ -105,13 +105,13 @@ func (m *MySpaceController) Rename() gin.HandlerFunc {
 		}
 
 		// 文件是否存在
-		fileInfo := m.MySpaceService.Get(currentUser.Id, filepath.Join(form.DirectoryPath, form.OldFilename))
+		fileInfo := m.FileInfoService.Get(currentUser.Id, filepath.Join(form.DirectoryPath, form.OldFilename))
 		if fileInfo == nil {
 			return FileNotExists
 		}
 
 		// 新文件名是否被占用
-		if m.MySpaceService.Get(currentUser.Id, filepath.Join(form.DirectoryPath, form.NewFilename)) == nil {
+		if m.FileInfoService.Get(currentUser.Id, filepath.Join(form.DirectoryPath, form.NewFilename)) == nil {
 			if fileInfo.Type == fileinfotype.Normal {
 				return FileExists
 			} else {
@@ -119,7 +119,7 @@ func (m *MySpaceController) Rename() gin.HandlerFunc {
 			}
 		}
 
-		err = m.MySpaceService.Rename(fileInfo, form.NewFilename)
+		err = m.FileInfoService.Rename(fileInfo, form.NewFilename)
 		if err != nil {
 			return InternalServerError
 		}

@@ -71,7 +71,7 @@ func (m *MySpaceController) Upload() gin.HandlerFunc {
 			return BadRequest
 		}
 		// 目录是否存在
-		if !m.MySpaceService.IsDirectoryExists(currentUser.Id, directoryPath) {
+		if !m.FileInfoService.IsDirectoryExists(currentUser.Id, directoryPath) {
 			return DirectoryNotExists
 		}
 

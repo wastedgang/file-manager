@@ -21,7 +21,7 @@ func init() {
 
 type StoreFileService struct {
 	OngoingUploadService *OngoingUploadService
-	MySpaceService       *MySpaceService
+	MySpaceService       *FileInfoService
 }
 
 func (s *StoreFileService) Get(contentHash string) *model.StoreFileInfo {

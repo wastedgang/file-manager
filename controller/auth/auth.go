@@ -64,7 +64,7 @@ func (a *AuthController) Login() gin.HandlerFunc {
 
 		// 保存jwt到cookies
 		ctx.SetCookie(service.TokenCookieKey, token, 0, "/", "", false, true)
-		return Success
+		return Success.AddField("user", user)
 	})
 	return handler
 }

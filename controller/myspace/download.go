@@ -22,7 +22,7 @@ func (m *MySpaceController) Download() gin.HandlerFunc {
 			ctx.String(404, "文件不存在")
 			return
 		}
-		fileInfo := m.MySpaceService.Get(currentUser.Id, downloadFilePath)
+		fileInfo := m.FileInfoService.Get(currentUser.Id, downloadFilePath)
 		if fileInfo == nil {
 			ctx.String(404, "文件不存在")
 			return

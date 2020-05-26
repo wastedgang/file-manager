@@ -102,7 +102,9 @@ func (u *UserController) UpdateCurrentUserInfo() gin.HandlerFunc {
 		if err != nil {
 			return InternalServerError
 		}
-		return Success
+
+		currentUser = u.UserService.GetById(currentUser.Id)
+		return Success.AddField("user", currentUser)
 	})
 	return handler
 }
