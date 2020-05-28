@@ -20,7 +20,7 @@ func JwtHandler() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		user := service.ParseUserFromJwt(ctx)
 		if user != nil {
-			user = userService.GetById(user.Id)
+			user = userService.GetByUsername(user.Username)
 			ctx.Set(service.CurrentUserContextName, user)
 		}
 		ctx.Next()

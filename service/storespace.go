@@ -12,7 +12,9 @@ func init() {
 	inject.Provide(new(StoreSpaceService))
 }
 
-type StoreSpaceService struct{}
+type StoreSpaceService struct {
+	StoreFileService *StoreFileService
+}
 
 func (s *StoreSpaceService) Add(directoryPath string, allocateSize int64, remark string) error {
 	now := time.Now()
@@ -66,10 +68,19 @@ func (s *StoreSpaceService) List() []*model.StoreSpace {
 		panic(err)
 	}
 
-	// TODO: 计算空间文件数量
-	// TODO: 计算空间文件剩余空间
+	// 计算空间文件数量，以及空间文件总大小
+	storeFileCountMap := make(map[string]int)
+	storeFileSizeMap := make(map[string]int64)
+	for _, storeFileInfo := range s.StoreFileService.List() {
+		storeDirectoryPath := storeFileInfo.StoreDirectoryPath
+		storeFileCountMap[storeDirectoryPath] = storeFileCountMap[storeDirectoryPath] + 1
+		storeFileSizeMap[storeDirectoryPath] = storeFileSizeMap[storeDirectoryPath] + storeFileInfo.FileSize
+	}
+
 	for _, storeSpace := range storeSpaces {
-		storeSpace.TotalFreeSpace = 1 << 30
+		storeSpace.TotalFileCount = storeFileCountMap[storeSpace.DirectoryPath]
+		// 计算空间文件剩余空间
+		storeSpace.TotalFreeSpace = storeSpace.AllocateSize - storeFileSizeMap[storeSpace.DirectoryPath]
 	}
 	return storeSpaces
 }

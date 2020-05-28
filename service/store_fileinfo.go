@@ -1,6 +1,8 @@
 package service
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"github.com/farseer810/file-manager/dao"
 	"github.com/farseer810/file-manager/inject"
@@ -22,6 +24,26 @@ func init() {
 type StoreFileService struct {
 	OngoingUploadService *OngoingUploadService
 	MySpaceService       *FileInfoService
+	FileInfoService      *FileInfoService
+}
+
+func (s *StoreFileService) List() []*model.StoreFileInfo {
+	var err error
+	var storeFileInfos []*model.StoreFileInfo
+	if err = dao.DB.Find(&storeFileInfos).Error; err != nil {
+		panic(err)
+	}
+	return storeFileInfos
+}
+
+func (s *StoreFileService) ListByStoreDirectoryPath(storeDirectoryPath string) []*model.StoreFileInfo {
+	var err error
+	var storeFileInfos []*model.StoreFileInfo
+	db := dao.DB.Where("`store_directory_path`=?", storeDirectoryPath)
+	if err = db.Find(&storeFileInfos).Error; err != nil {
+		panic(err)
+	}
+	return storeFileInfos
 }
 
 func (s *StoreFileService) Get(contentHash string) *model.StoreFileInfo {
@@ -113,7 +135,19 @@ func (s *StoreFileService) Save(
 		}
 		tmpFile.Close()
 
-		// TODO: 重新计算内容哈希
+		// 重新计算内容哈希
+		tmpFile, err = os.Open(tmpFilePath)
+		if err != nil {
+			return err
+		}
+		md5 := md5.New()
+		_, err = io.Copy(md5, tmpFile)
+		if err != nil {
+			tmpFile.Close()
+			return err
+		}
+		tmpFile.Close()
+		contentHash = hex.EncodeToString(md5.Sum(nil))
 
 		// 计算文件大小
 		fileSize, err = utils.GetFileSize(filepath.Join(ongoingUploadInfo.DirectoryPath, ongoingUploadInfo.Filename))
@@ -145,8 +179,6 @@ func (s *StoreFileService) Save(
 		tx.Rollback()
 		return err
 	}
-
-	// TODO: 检查文件夹是否存在
 
 	// 添加记录到我的空间
 	mySpaceFilename := s.GetAvailableFilename(userId, directoryPath, part.FileName())

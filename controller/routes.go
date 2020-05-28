@@ -47,11 +47,11 @@ func InitRoutes(r *gin.Engine) error {
 
 		// 用户管理
 		v1.POST("/user", RequireSystemAdmin(), userController.AddUser())
-		v1.PUT("/user/:user_id/info", RequireSystemAdmin(), userController.UpdateUserInfo())
-		v1.PATCH("/user/:user_id/password", RequireSystemAdmin(), userController.UpdateUserPassword())
-		v1.DELETE("/user/:user_id", RequireSystemAdmin(), userController.DeleteUser())
+		v1.PUT("/user/:username/info", RequireSystemAdmin(), userController.UpdateUserInfo())
+		v1.PATCH("/user/:username/password", RequireSystemAdmin(), userController.UpdateUserPassword())
+		v1.DELETE("/user/:username", RequireSystemAdmin(), userController.DeleteUser())
 		v1.GET("/users", RequireLogin(), userController.ListUsers())
-		v1.GET("/user/:user_id/info", RequireSystemAdmin(), userController.GetUserInfo())
+		v1.GET("/user/:username/info", RequireSystemAdmin(), userController.GetUserInfo())
 		v1.GET("/current_user/info", RequireLogin(), userController.GetCurrentUser())
 		v1.PUT("/current_user/info", RequireLogin(), userController.UpdateCurrentUserInfo())
 		v1.PATCH("/current_user/password", RequireLogin(), userController.UpdateCurrentUserPassword())

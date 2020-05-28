@@ -7,7 +7,6 @@ import (
 	"github.com/farseer810/file-manager/service"
 	"github.com/gin-gonic/gin"
 	"regexp"
-	"strconv"
 )
 
 func init() {
@@ -64,8 +63,8 @@ func (u *UserController) UpdateUserInfo() gin.HandlerFunc {
 		}
 
 		// 检查用户是否存在
-		userId, _ := strconv.Atoi(ctx.Param("user_id"))
-		user := u.UserService.GetById(userId)
+		username := ctx.Param("username")
+		user := u.UserService.GetByUsername(username)
 		if user == nil {
 			return UserNotExists
 		}
@@ -76,7 +75,7 @@ func (u *UserController) UpdateUserInfo() gin.HandlerFunc {
 			return PermissionDenied
 		}
 
-		err = u.UserService.Update(userId, form.Nickname, form.Remark)
+		err = u.UserService.Update(user.Id, form.Nickname, form.Remark)
 		if err != nil {
 			return InternalServerError
 		}
@@ -121,8 +120,8 @@ func (u *UserController) UpdateUserPassword() gin.HandlerFunc {
 		}
 
 		// 检查用户是否存在
-		userId, _ := strconv.Atoi(ctx.Param("user_id"))
-		user := u.UserService.GetById(userId)
+		username := ctx.Param("username")
+		user := u.UserService.GetByUsername(username)
 		if user == nil {
 			return UserNotExists
 		}
@@ -174,8 +173,8 @@ func (u *UserController) DeleteUser() gin.HandlerFunc {
 	handler := ConvertGinHandlerFunc(func(ctx *gin.Context) *Response {
 		var err error
 		// 检查用户是否存在
-		userId, _ := strconv.Atoi(ctx.Param("user_id"))
-		user := u.UserService.GetById(userId)
+		username := ctx.Param("username")
+		user := u.UserService.GetByUsername(username)
 		if user == nil {
 			return UserNotExists
 		}
@@ -232,8 +231,8 @@ func (u *UserController) GetCurrentUser() gin.HandlerFunc {
 func (u *UserController) GetUserInfo() gin.HandlerFunc {
 	handler := ConvertGinHandlerFunc(func(ctx *gin.Context) *Response {
 		// 检查用户是否存在
-		userId, _ := strconv.Atoi(ctx.Param("user_id"))
-		user := u.UserService.GetById(userId)
+		username := ctx.Param("username")
+		user := u.UserService.GetByUsername(username)
 		if user == nil {
 			return UserNotExists
 		}

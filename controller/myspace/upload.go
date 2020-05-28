@@ -9,9 +9,10 @@ import (
 	"strconv"
 )
 
+// GetUploadStartPoint 获取上传开始位置
 func (m *MySpaceController) GetUploadStartPoint() gin.HandlerFunc {
 	handler := ConvertGinHandlerFunc(func(ctx *gin.Context) *Response {
-		contentHash := ctx.Query("contentHash")
+		contentHash := ctx.Query("content_hash")
 		if contentHash == "" {
 			return BadRequest
 		}
@@ -21,11 +22,17 @@ func (m *MySpaceController) GetUploadStartPoint() gin.HandlerFunc {
 			return BadRequest
 		}
 
+		storeFileInfo := m.StoreFileService.Get(contentHash)
+		if storeFileInfo != nil {
+			return Success.AddField("upload_start_point", storeFileInfo.FileSize)
+		}
+
 		// 检查是否已有存储空间
 		bestStoreSpace := m.StoreSpaceService.GetBestStoreSpace()
 		if bestStoreSpace == nil {
 			return NoStoreSpace
 		}
+		// 检查剩余空间是否足够
 		if bestStoreSpace.TotalFreeSpace < fileSize {
 			return NotEnoughFreeSpace
 		}
