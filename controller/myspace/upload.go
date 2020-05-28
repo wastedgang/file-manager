@@ -47,29 +47,7 @@ func (m *MySpaceController) GetUploadStartPoint() gin.HandlerFunc {
 func (m *MySpaceController) Upload() gin.HandlerFunc {
 	handler := ConvertGinHandlerFunc(func(ctx *gin.Context) *Response {
 		var err error
-		// 检查Content-Hash是否存在
-		contentHash := ctx.GetHeader("Content-Hash")
-		if contentHash == "" {
-			return BadRequest
-		}
-
 		currentUser := m.UserService.GetCurrentUser(ctx)
-
-		// 内容开始位置
-		contentStartAtHeader := ctx.GetHeader("Content-Start-At")
-		if contentStartAtHeader == "" {
-			contentStartAtHeader = "0"
-		}
-		contentStartAt, err := strconv.ParseInt(contentStartAtHeader, 10, 64)
-		if err != nil {
-			return BadRequest
-		}
-		// 检查开始位置是否正确
-		startPoint := m.OngoingUploadService.GetUploadStartPoint(currentUser.Id, contentHash)
-		storeFileInfo := m.StoreFileService.Get(contentHash)
-		if storeFileInfo == nil && startPoint != contentStartAt {
-			return InvalidUploadStartPoint
-		}
 
 		// 检查上传目录路径参数
 		directoryPath := "/" + ctx.Param("upload_directory_path")
@@ -106,7 +84,7 @@ func (m *MySpaceController) Upload() gin.HandlerFunc {
 			return BadRequest
 		}
 
-		err = m.StoreFileService.Save(currentUser.Id, contentHash, filePart, directoryPath)
+		err = m.StoreFileService.Save(currentUser.Id, filePart, directoryPath)
 		if err != nil {
 			return UploadFailed
 		}

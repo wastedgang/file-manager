@@ -22,9 +22,9 @@ func init() {
 }
 
 type StoreFileService struct {
-	OngoingUploadService *OngoingUploadService
-	MySpaceService       *FileInfoService
-	FileInfoService      *FileInfoService
+	MySpaceService    *FileInfoService
+	FileInfoService   *FileInfoService
+	StoreSpaceService *StoreSpaceService
 }
 
 func (s *StoreFileService) List() []*model.StoreFileInfo {
@@ -90,7 +90,6 @@ func (s *StoreFileService) GetAvailableFilename(userId int, directoryPath, filen
 
 func (s *StoreFileService) Save(
 	userId int,
-	contentHash string,
 	part *multipart.Part,
 	directoryPath string) error {
 	// 开事务
@@ -104,59 +103,49 @@ func (s *StoreFileService) Save(
 
 	var err error
 	now := time.Now()
-	contentType := part.Header.Get("Content-Type") // 内容哈希
-	var fileSize int64                             // 文件大小
+	contentType := part.Header.Get("Content-Type")
+
+	// 保存文件内容
+	bestStoreSpace := s.StoreSpaceService.GetBestStoreSpace()
+	storeDirectoryPath := bestStoreSpace.DirectoryPath
+	tmpFilename := fmt.Sprintf("%d_%s.upload.tmp", userId, part.FileName())
+	tmpFilePath := filepath.Join(storeDirectoryPath, tmpFilename)
+	tmpFile, err := os.OpenFile(tmpFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(tmpFile, part)
+	if err != nil {
+		tmpFile.Close()
+		return err
+	}
+	tmpFile.Close()
+
+	// 计算文件大小
+	fileSize, err := utils.GetFileSize(tmpFilePath)
+
+	// 重新计算内容哈希
+	tmpFile, err = os.Open(tmpFilePath)
+	if err != nil {
+		return err
+	}
+	md5 := md5.New()
+	_, err = io.Copy(md5, tmpFile)
+	if err != nil {
+		tmpFile.Close()
+		return err
+	}
+	tmpFile.Close()
+	contentHash := hex.EncodeToString(md5.Sum(nil))
 
 	storeFileInfo := s.Get(contentHash)
-	// 未上传
+	// 未上传过
 	if storeFileInfo == nil {
-		// 获取文件上传信息，并更新
-		ongoingUploadInfo := s.OngoingUploadService.Get(userId, contentHash)
-		if ongoingUploadInfo == nil {
-			// 不存在则自动创建
-			ongoingUploadInfo, err = s.OngoingUploadService.Add(userId, contentHash, contentType)
-		} else {
-			err = s.OngoingUploadService.Update(userId, contentHash, contentType)
-		}
-		if err != nil {
-			return err
-		}
-
-		// 保存文件内容
-		tmpFilePath := filepath.Join(ongoingUploadInfo.DirectoryPath, ongoingUploadInfo.Filename)
-		tmpFile, err := os.OpenFile(tmpFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			return err
-		}
-		_, err = io.Copy(tmpFile, part)
-		if err != nil {
-			tmpFile.Close()
-			return err
-		}
-		tmpFile.Close()
-
-		// 重新计算内容哈希
-		tmpFile, err = os.Open(tmpFilePath)
-		if err != nil {
-			return err
-		}
-		md5 := md5.New()
-		_, err = io.Copy(md5, tmpFile)
-		if err != nil {
-			tmpFile.Close()
-			return err
-		}
-		tmpFile.Close()
-		contentHash = hex.EncodeToString(md5.Sum(nil))
-
-		// 计算文件大小
-		fileSize, err = utils.GetFileSize(filepath.Join(ongoingUploadInfo.DirectoryPath, ongoingUploadInfo.Filename))
-
 		// 保存存储信息
 		storeFilename := fmt.Sprintf("%s_%s", now.Format("20060102150405"), part.FileName())
 		storeFileInfo = &model.StoreFileInfo{
 			ContentHash:        contentHash,
-			StoreDirectoryPath: ongoingUploadInfo.DirectoryPath,
+			StoreDirectoryPath: storeDirectoryPath,
 			StoreFilename:      storeFilename,
 			FileSize:           fileSize,
 			MimeType:           contentType,
@@ -167,17 +156,17 @@ func (s *StoreFileService) Save(
 			return err
 		}
 		// 重命名文件
-		err = os.Rename(tmpFilePath, filepath.Join(ongoingUploadInfo.DirectoryPath, storeFilename))
+		err = os.Rename(tmpFilePath, filepath.Join(storeDirectoryPath, storeFilename))
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
-	}
-	contentHash = storeFileInfo.ContentHash
-	fileSize = storeFileInfo.FileSize
-	if err = tx.Where("`user_id`=? AND `content_hash`=?", userId, contentHash).Delete(model.OngoingUploadInfo{}).Error; err != nil {
-		tx.Rollback()
-		return err
+	} else {
+		err = os.Remove(tmpFilePath)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	// 添加记录到我的空间
