@@ -22,6 +22,7 @@ func (s *StoreSpaceService) Add(directoryPath string, allocateSize int64, remark
 		DirectoryPath: directoryPath,
 		AllocateSize:  allocateSize,
 		Remark:        remark,
+		UpdateTime:    now,
 		CreateTime:    now,
 	}
 	if err := dao.DB.Create(&storeSpace).Error; err != nil {
@@ -44,7 +45,7 @@ func (s *StoreSpaceService) Update(directoryPath string, allocateSize int64, rem
 		"allocate_size": allocateSize,
 		"remark":        remark,
 	}
-	if err := dao.DB.Model(model.User{}).Where("`directory_path`=?", directoryPath).Updates(updates).Error; err != nil {
+	if err := dao.DB.Model(model.StoreSpace{}).Where("`directory_path`=?", directoryPath).Updates(updates).Error; err != nil {
 		return err
 	}
 	return nil
@@ -76,7 +77,6 @@ func (s *StoreSpaceService) List() []*model.StoreSpace {
 		storeFileCountMap[storeDirectoryPath] = storeFileCountMap[storeDirectoryPath] + 1
 		storeFileSizeMap[storeDirectoryPath] = storeFileSizeMap[storeDirectoryPath] + storeFileInfo.FileSize
 	}
-
 	for _, storeSpace := range storeSpaces {
 		storeSpace.TotalFileCount = storeFileCountMap[storeSpace.DirectoryPath]
 		// 计算空间文件剩余空间

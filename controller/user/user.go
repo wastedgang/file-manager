@@ -30,7 +30,7 @@ func (u *UserController) AddUser() gin.HandlerFunc {
 		}
 
 		// 检查username参数
-		if ok, _ := regexp.MatchString("^[a-zA-Z0-9_.@-]{6,32}$", form.Username); !ok {
+		if ok, _ := regexp.MatchString("^[a-zA-Z0-9_.@-]{5,32}$", form.Username); !ok {
 			return BadRequest.SetMessage("用户名格式错误")
 		}
 
@@ -132,7 +132,7 @@ func (u *UserController) UpdateUserPassword() gin.HandlerFunc {
 			return PermissionDenied
 		}
 
-		err = u.UserService.UpdateUserPassword(currentUser.Id, form.Password)
+		err = u.UserService.UpdateUserPassword(user.Id, form.Password)
 		if err != nil {
 			return InternalServerError
 		}

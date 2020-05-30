@@ -32,4 +32,7 @@ var (
 
 	UploadFailed            = &Response{Code: "005001", Message: "上传失败"}
 	InvalidUploadStartPoint = &Response{Code: "005002", Message: "上传文件开始位置错误"}
+
+	GroupNotExists = &Response{Code: "006001", Message: "群组不存在"}
+	GroupExists    = &Response{Code: "006002", Message: "群组名已被占用"}
 )

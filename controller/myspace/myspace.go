@@ -7,7 +7,6 @@ import (
 	"github.com/farseer810/file-manager/service"
 	"github.com/gin-gonic/gin"
 	"path/filepath"
-	"strings"
 )
 
 func init() {
@@ -19,55 +18,6 @@ type MySpaceController struct {
 	FileInfoService      *service.FileInfoService
 	StoreSpaceService    *service.StoreSpaceService
 	StoreFileService     *service.StoreFileService
-	OngoingUploadService *service.OngoingUploadService
-}
-
-func (m *MySpaceController) AddDirectory() gin.HandlerFunc {
-	handler := ConvertGinHandlerFunc(func(ctx *gin.Context) *Response {
-		var err error
-		var form struct {
-			DirectoryPath string `form:"directory_path"`
-			Filename      string `form:"filename" binding:"required,min=1,max=128"`
-		}
-		if err = ctx.ShouldBind(&form); err != nil {
-			return BadRequest
-		}
-		// 检查目录
-		directoryPath := form.DirectoryPath
-		if directoryPath == "" {
-			directoryPath = "/"
-		}
-		if !strings.HasPrefix(directoryPath, "/") {
-			return BadRequest
-		}
-		directoryPath, err = filepath.Abs(directoryPath)
-		if err != nil {
-			return BadRequest
-		}
-
-		// 检查文件夹名
-		if form.Filename == "." || form.Filename == ".." || strings.Contains(form.Filename, "/") {
-			return BadRequest
-		}
-
-		currentUser := m.UserService.GetCurrentUser(ctx)
-		// 检查文件夹是否存在
-		if !m.FileInfoService.IsDirectoryExists(currentUser.Id, directoryPath) {
-			return DirectoryNotExists
-		}
-
-		// 检查文件是否已存在
-		if m.FileInfoService.Get(currentUser.Id, filepath.Join(directoryPath, form.Filename)) != nil {
-			return FileExists
-		}
-
-		err = m.FileInfoService.CreateDirectory(currentUser.Id, filepath.Join(directoryPath, form.Filename))
-		if err != nil {
-			return InternalServerError
-		}
-		return Success
-	})
-	return handler
 }
 
 func (m *MySpaceController) List() gin.HandlerFunc {

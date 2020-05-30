@@ -149,6 +149,7 @@ func (s *StoreFileService) Save(
 			StoreFilename:      storeFilename,
 			FileSize:           fileSize,
 			MimeType:           contentType,
+			UpdateTime:         now,
 			CreateTime:         now,
 		}
 		if err := tx.Create(&storeFileInfo).Error; err != nil {

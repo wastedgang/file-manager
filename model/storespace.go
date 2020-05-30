@@ -11,6 +11,7 @@ type StoreSpace struct {
 	AllocateSize   int64     `json:"allocate_size"`
 	TotalFileCount int       `json:"total_file_count" gorm:"-"`
 	TotalFreeSpace int64     `json:"total_free_space" gorm:"-"`
+	UpdateTime     time.Time `json:"update_time"`
 	CreateTime     time.Time `json:"create_time"`
 }
 

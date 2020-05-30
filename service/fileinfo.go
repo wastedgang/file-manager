@@ -18,6 +18,15 @@ func init() {
 type FileInfoService struct {
 }
 
+func (s *FileInfoService) ListDirectories(userId int) []*model.FileInfo {
+	var err error
+	var fileInfos []*model.FileInfo
+	if err = dao.DB.Where("`user_id`=? AND `type`=?", userId, fileinfotype.Directory).Find(&fileInfos).Error; err != nil {
+		panic(err)
+	}
+	return fileInfos
+}
+
 func (s *FileInfoService) List(userId int, directoryPath string, searchWord string) []*model.FileInfo {
 	var err error
 	var fileInfos []*model.FileInfo

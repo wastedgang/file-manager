@@ -47,9 +47,11 @@ var migrations = []*migrate.MigrationScript{
 			"`directory_path` varchar(256) NOT NULL COMMENT '存储目录路径',\n" +
 			"`allocate_size` bigint NOT NULL COMMENT '分配空间大小',\n" +
 			"`remark` varchar(128) NOT NULL DEFAULT '' COMMENT '备注',\n" +
+			"`update_time` datetime NOT NULL COMMENT '更新时间',\n" +
 			"`create_time` datetime NOT NULL COMMENT '创建时间',\n" +
 			"PRIMARY KEY(`id`),\n" +
-			"UNIQUE KEY `index_directory_path`(`directory_path`)\n" +
+			"UNIQUE KEY `index_directory_path`(`directory_path`),\n" +
+			"KEY `index_update_time`(`update_time`)\n" +
 			") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n",
 		DownScript: "DROP TABLE `store_space`\n",
 	},
@@ -63,10 +65,12 @@ var migrations = []*migrate.MigrationScript{
 			"`store_filename` varchar(256) NOT NULL COMMENT '存储文件名',\n" +
 			"`file_size` bigint NOT NULL COMMENT '文件大小',\n" +
 			"`mime_type` varchar(32) NOT NULL COMMENT 'MIME类型',\n" +
+			"`update_time` datetime NOT NULL COMMENT '更新时间',\n" +
 			"`create_time` datetime NOT NULL COMMENT '创建时间',\n" +
 			"PRIMARY KEY(`id`),\n" +
 			"UNIQUE KEY `unique_content_hash`(`content_hash`),\n" +
-			"KEY `index_store_directory_path`(`store_directory_path`)\n" +
+			"KEY `index_store_directory_path`(`store_directory_path`),\n" +
+			"KEY `index_update_time`(`update_time`)\n" +
 			") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n",
 		DownScript: "DROP TABLE `store_space`\n",
 	},
@@ -96,69 +100,40 @@ var migrations = []*migrate.MigrationScript{
 	},
 	{
 		Version:    6,
-		Identifier: "create_ongoing_upload_info_table",
-		UpScript: "CREATE TABLE `ongoing_upload_info` (\n" +
-			"`id` int NOT NULL AUTO_INCREMENT COMMENT 'ID',\n" +
-			"`content_hash` varchar(64) NOT NULL COMMENT '内容hash',\n" +
-			"`user_id` int NOT NULL COMMENT '用户ID',\n" +
-			"`directory_path` varchar(256) NOT NULL COMMENT '存储目录路径',\n" +
-			"`filename` varchar(256) NOT NULL COMMENT '存储文件名',\n" +
-			"`mime_type` varchar(32) NOT NULL COMMENT 'MIME类型',\n" +
+		Identifier: "create_group_table",
+		UpScript: "CREATE TABLE `group` (\n" +
+			"`id` int NOT NULL AUTO_INCREMENT COMMENT '群id',\n" +
+			"`owner_user_id` int NOT NULL COMMENT '群主用户id',\n" +
+			"`name` varchar(16) NOT NULL COMMENT '群名称',\n" +
+			"`description` varchar(64) NOT NULL COMMENT '群组描述',\n" +
+			"`update_time` datetime NOT NULL COMMENT '更新时间',\n" +
 			"`create_time` datetime NOT NULL COMMENT '创建时间',\n" +
 			"PRIMARY KEY(`id`),\n" +
-			"UNIQUE KEY `unique_file`(`directory_path`, `filename`),\n" +
-			"UNIQUE KEY `unique_user_content_hash`(`user_id`, `content_hash`),\n" +
-			"KEY `index_directory_path`(`directory_path`),\n" +
-			"KEY `index_user_id`(`user_id`),\n" +
-			"KEY `index_content_hash`(`content_hash`)\n" +
+			"UNIQUE KEY `unique_name`(`name`),\n" +
+			"KEY `index_user_id`(`owner_user_id`),\n" +
+			"KEY `index_update_time`(`update_time`)\n" +
 			") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n",
-		DownScript: "DROP TABLE `ongoing_upload_info`\n",
+		DownScript: "DROP TABLE `group`\n",
 	},
-	//{
-	//	Version:    3,
-	//	Identifier: "create_group_table",
-	//	UpScript: "CREATE TABLE `group` (\n" +
-	//		"`id` int NOT NULL AUTO_INCREMENT COMMENT '群id',\n" +
-	//		"`owner_user_id` int NOT NULL COMMENT '群主用户id',\n" +
-	//		"`name` varchar(16) NOT NULL COMMENT '群名称',\n" +
-	//		"`description` varchar(64) NOT NULL COMMENT '群组描述',\n" +
-	//		"`update_time` datetime NOT NULL COMMENT '更新时间',\n" +
-	//		"`create_time` datetime NOT NULL COMMENT '创建时间',\n" +
-	//		"PRIMARY KEY(`id`)\n" +
-	//		") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n",
-	//	DownScript: "DROP TABLE `group`\n",
-	//},
-	//{
-	//	Version:    4,
-	//	Identifier: "create_unique_index_group_name",
-	//	UpScript:   "CREATE UNIQUE INDEX `unique_group_name` ON `group`(`name`);\n",
-	//	DownScript: "DROP INDEX `unique_group_name` ON `group`\n",
-	//},
-	//{
-	//	Version:    5,
-	//	Identifier: "create_group_member_table",
-	//	UpScript: "CREATE TABLE `group_member` (\n" +
-	//		"`id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '成员记录id',\n" +
-	//		"`group_id` int NOT NULL COMMENT '群id',\n" +
-	//		"`user_id` int NOT NULL COMMENT '成员用户id',\n" +
-	//		"`role` smallint NOT NULL COMMENT '角色',\n" +
-	//		"`create_time` datetime NOT NULL COMMENT '创建时间',\n" +
-	//		"PRIMARY KEY(`id`)\n" +
-	//		") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n",
-	//	DownScript: "DROP TABLE `group_member`\n",
-	//},
-	//{
-	//	Version:    6,
-	//	Identifier: "create_unique_index_group_member",
-	//	UpScript:   "CREATE UNIQUE INDEX `unique_group_member` ON `group_member`(`group_id`, `user_id`)\n",
-	//	DownScript: "DROP INDEX `unique_group_member` ON `group_member`\n",
-	//},
-	//{
-	//	Version:    7,
-	//	Identifier: "create_index_user_id",
-	//	UpScript:   "CREATE INDEX `index_user_id` ON `group_member`(`user_id`)\n",
-	//	DownScript: "DROP INDEX `index_user_id` ON `group_member`\n",
-	//},
+	{
+		Version:    7,
+		Identifier: "create_group_member_table",
+		UpScript: "CREATE TABLE `group_member` (\n" +
+			"`id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '成员记录id',\n" +
+			"`group_id` int NOT NULL COMMENT '群id',\n" +
+			"`user_id` int NOT NULL COMMENT '成员用户id',\n" +
+			"`role` smallint NOT NULL COMMENT '角色',\n" +
+			"`update_time` datetime NOT NULL COMMENT '更新时间',\n" +
+			"`create_time` datetime NOT NULL COMMENT '创建时间',\n" +
+			"PRIMARY KEY(`id`),\n" +
+			"UNIQUE KEY `unique_group_member`(`group_id`, `user_id`),\n" +
+			"KEY `index_group_id`(`group_id`),\n" +
+			"KEY `index_user_id`(`user_id`),\n" +
+			"KEY `index_role`(`role`),\n" +
+			"KEY `index_update_time`(`update_time`)\n" +
+			") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n",
+		DownScript: "DROP TABLE `group_member`\n",
+	},
 	//{
 	//	Version:    8,
 	//	Identifier: "create_share_record_table",

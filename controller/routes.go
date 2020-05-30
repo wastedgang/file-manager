@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/farseer810/file-manager/controller/auth"
+	"github.com/farseer810/file-manager/controller/group"
 	"github.com/farseer810/file-manager/controller/middleware"
 	"github.com/farseer810/file-manager/controller/myspace"
 	"github.com/farseer810/file-manager/controller/settings"
@@ -18,12 +19,14 @@ func InitRoutes(r *gin.Engine) error {
 	var authController *auth.AuthController
 	var storeSpaceController *storespace.StoreSpaceController
 	var mySpaceController *myspace.MySpaceController
+	var groupController *group.GroupController
 	err := inject.Get(
 		&settingsController,
 		&userController,
 		&authController,
 		&storeSpaceController,
 		&mySpaceController,
+		&groupController,
 	)
 	if err != nil {
 		return err
@@ -31,13 +34,13 @@ func InitRoutes(r *gin.Engine) error {
 
 	// 配置中间件
 	r.Use(middleware.RecoveryHandler())
-	r.Use(middleware.JwtHandler())
 	r.Use(middleware.CheckConfigurationHandler())
+	r.Use(middleware.JwtHandler())
 
 	v1 := r.Group("/api/v1")
 	{
 		// 配置信息管理
-		v1.GET("/settings/database", RequireSystemAdmin(), settingsController.GetDatabaseSettings())
+		v1.GET("/settings/database", RequireLogin(), settingsController.GetDatabaseSettings())
 		v1.POST("/settings/database", settingsController.SetDatabaseSettings())
 		v1.POST("/settings/database/check", settingsController.CheckDatabaseSettings())
 
@@ -58,12 +61,16 @@ func InitRoutes(r *gin.Engine) error {
 
 		// 存储空间管理
 		v1.POST("/store_space", RequireSystemAdmin(), storeSpaceController.AddStoreSpace())
+		v1.PUT("/store_space", RequireSystemAdmin(), storeSpaceController.UpdateStoreSpace())
 		v1.DELETE("/store_space", RequireSystemAdmin(), storeSpaceController.DeleteStoreSpace())
 		v1.GET("/store_spaces", RequireSystemAdmin(), storeSpaceController.ListStoreSpaces())
+		v1.GET("/store_space/files", RequireSystemAdmin(), storeSpaceController.ListStoreSpaceFiles())
+		v1.GET("/directories", storeSpaceController.ListDirectories())
 
 		// 个人空间管理
-		v1.GET("/my_space/files", RequireLogin(), mySpaceController.List())
 		v1.POST("/my_space/directory", RequireLogin(), mySpaceController.AddDirectory())
+		v1.GET("/my_space/directories", RequireLogin(), mySpaceController.ListDirectories())
+		v1.GET("/my_space/files", RequireLogin(), mySpaceController.List())
 		v1.DELETE("/my_space/file", RequireLogin(), mySpaceController.Delete())
 		v1.PUT("/my_space/file", RequireLogin(), mySpaceController.Rename())
 		v1.POST("/my_space/file/copy", RequireLogin(), mySpaceController.Copy())
@@ -72,10 +79,23 @@ func InitRoutes(r *gin.Engine) error {
 
 		// 个人空间上传
 		v1.POST("/my_space/file/upload/*upload_directory_path", RequireLogin(), mySpaceController.Upload())
-		v1.GET("/my_space/file/upload/start_point", RequireLogin(), mySpaceController.GetUploadStartPoint())
 
 		// 个人空间下载
 		v1.GET("/my_space/file/download/*download_file_path", RequireLogin(), mySpaceController.Download())
+
+		// 群组管理
+		v1.POST("/group", RequireLogin(), groupController.Add())
+		v1.PUT("/group/:group_name", RequireLogin(), groupController.Update())
+		//v1.GET("/group/:group_name", RequireLogin(), groupController.Get())
+		v1.DELETE("/group/:group_name", RequireLogin(), groupController.Delete())
+		v1.GET("/user_groups", RequireLogin(), groupController.ListUserGroup())
+		//v1.GET("/user_group/:group_name", RequireLogin(), groupController.GetUserGroup())
+
+		// 群组成员管理
+		v1.POST("/group/:group_name/member", RequireLogin(), groupController.AddMember())
+		v1.PUT("/group/:group_name/member", RequireLogin(), groupController.UpdateMember())
+		v1.DELETE("/group/:group_name/member/:user_id", RequireLogin(), groupController.DeleteMember())
+		v1.GET("/group/:group_name/members", RequireLogin(), groupController.ListMembers())
 	}
 
 	return nil

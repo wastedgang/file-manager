@@ -219,11 +219,13 @@ func (u *UserService) DeleteById(userId int) error {
 
 // Update 更新指定用户信息
 func (u *UserService) Update(userId int, nickname, remark string) error {
+	now := time.Now()
 	user := model.User{Id: userId}
 
 	updates := map[string]interface{}{
 		"nickname": nickname,
 		"remark":   remark,
+		"update_time": now,
 	}
 	if err := dao.DB.Model(&user).Updates(updates).Error; err != nil {
 		return err

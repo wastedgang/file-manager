@@ -11,6 +11,7 @@ type StoreFileInfo struct {
 	StoreFilename      string    `json:"store_filename"`
 	FileSize           int64     `json:"file_size"`
 	MimeType           string    `json:"mime_type"`
+	UpdateTime         time.Time `json:"update_time"`
 	CreateTime         time.Time `json:"create_time"`
 }
 

@@ -1,48 +1,14 @@
 package myspace
 
 import (
+	"fmt"
 	. "github.com/farseer810/file-manager/controller/vo/statuscode"
 	"github.com/gin-gonic/gin"
 	"io"
 	"mime/multipart"
 	"path/filepath"
-	"strconv"
 )
 
-// GetUploadStartPoint 获取上传开始位置
-func (m *MySpaceController) GetUploadStartPoint() gin.HandlerFunc {
-	handler := ConvertGinHandlerFunc(func(ctx *gin.Context) *Response {
-		contentHash := ctx.Query("content_hash")
-		if contentHash == "" {
-			return BadRequest
-		}
-
-		fileSize, err := strconv.ParseInt(ctx.Query("file_size"), 10, 64)
-		if err != nil {
-			return BadRequest
-		}
-
-		storeFileInfo := m.StoreFileService.Get(contentHash)
-		if storeFileInfo != nil {
-			return Success.AddField("upload_start_point", storeFileInfo.FileSize)
-		}
-
-		// 检查是否已有存储空间
-		bestStoreSpace := m.StoreSpaceService.GetBestStoreSpace()
-		if bestStoreSpace == nil {
-			return NoStoreSpace
-		}
-		// 检查剩余空间是否足够
-		if bestStoreSpace.TotalFreeSpace < fileSize {
-			return NotEnoughFreeSpace
-		}
-
-		currentUser := m.UserService.GetCurrentUser(ctx)
-		startPoint := m.OngoingUploadService.GetUploadStartPoint(currentUser.Id, contentHash)
-		return Success.AddField("upload_start_point", startPoint)
-	})
-	return handler
-}
 
 func (m *MySpaceController) Upload() gin.HandlerFunc {
 	handler := ConvertGinHandlerFunc(func(ctx *gin.Context) *Response {
@@ -58,6 +24,12 @@ func (m *MySpaceController) Upload() gin.HandlerFunc {
 		// 目录是否存在
 		if !m.FileInfoService.IsDirectoryExists(currentUser.Id, directoryPath) {
 			return DirectoryNotExists
+		}
+
+		// 检查是否存在存储空间
+		fmt.Println(m.StoreSpaceService.List())
+		if len(m.StoreSpaceService.List()) == 0 {
+			return StoreSpaceNotExists.SetMessage("请先添加存储空间")
 		}
 
 		multipartReader, err := ctx.Request.MultipartReader()

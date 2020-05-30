@@ -57,6 +57,7 @@ func (s *SettingsController) CheckDatabaseSettings() gin.HandlerFunc {
 // SaveDatabaseConfig 保存数据库配置信息
 func (s *SettingsController) SetDatabaseSettings() gin.HandlerFunc {
 	handler := ConvertGinHandlerFunc(func(ctx *gin.Context) *Response {
+		var err error
 		var form struct {
 			Type     string `form:"type" binding:"required,oneof=MySQL SQLite"`
 			Address  string `form:"address"`
@@ -64,7 +65,7 @@ func (s *SettingsController) SetDatabaseSettings() gin.HandlerFunc {
 			Username string `form:"username"`
 			Password string `form:"password" binding:"required"`
 		}
-		if err := ctx.ShouldBind(&form); err != nil {
+		if err = ctx.ShouldBind(&form); err != nil {
 			return BadRequest
 		}
 		if form.Type == "SQLite" {
@@ -72,9 +73,8 @@ func (s *SettingsController) SetDatabaseSettings() gin.HandlerFunc {
 			form.Database = ""
 			form.Username = ""
 		}
-
 		// 检查配置信息是否已存在，已存在说明系统已初始化，不能再初始化了
-		_, err := cryptoconfig.GetConfiguration()
+		_, err = cryptoconfig.GetConfiguration()
 		if err == nil {
 			return SystemInitialized
 		}
