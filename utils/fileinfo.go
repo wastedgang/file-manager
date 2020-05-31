@@ -22,15 +22,15 @@ func GetFileSize(filepath string) (int64, error) {
 }
 
 func GetFirstPinYinLetter(s string) (r rune) {
-	result := pinyin.Pinyin(s, pinyinArgs)
+	if len(s) == 0 {
+		return
+	}
+	result := pinyin.SinglePinyin([]rune(s)[0], pinyinArgs)
 	if len(result) == 0 {
 		return
 	}
 	if len(result[0]) == 0 {
 		return
 	}
-	if len(result[0][0]) == 0 {
-		return
-	}
-	return []rune(result[0][0])[0]
+	return []rune(result[0])[0]
 }
