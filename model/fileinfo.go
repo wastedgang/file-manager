@@ -32,54 +32,49 @@ func (f *FileInfo) Less(f2 *FileInfo) bool {
 	}
 	filename1 := []rune(f.Filename)
 	filename2 := []rune(f2.Filename)
-    length1 := len(filename1)
-    length2 := len(filename2)
-    minLength := length1
-    if length2 < length1 {
-        minLength = length2
-    }
+	length1 := len(filename1)
+	length2 := len(filename2)
+	minLength := length1
+	if length2 < length1 {
+		minLength = length2
+	}
 
-    // 顺序依次为：其他字符、数字、字母、汉字
-    var r1, r2 rune
-    var pinyin1, pinyin2 string
-    for i := 0; i < minLength; i++ {
-        r1, r2 = filename1[i], filename2[i]
-        // 字符一样，跳过，比较下一个
-        if r1 == r2 {
-            continue
-        }
-        pinyin1 = utils.GetPinYin(r1)
-        pinyin2 = utils.GetPinYin(r2)
-        if pinyin1 == ""  && pinyin2 == "" {
-            // 两个字符都不是汉字
-            isLetter1 := IsLetter(r1)
-            isLetter2 := IsLetter(r2)
-            if isLetter1 && !isLetter2 {
-                return false
-            }
-            else if !isLetter1 && isLetter2 {
-                return true
-            }
-            else if !isLetter && !isLetter2 {
-                // 两个字符虽不是汉字，又不是字母
-                isDigit1 := IsDigit(r1)
-                isDigit2 := IsDigit(r2)
-                if isDigit1 && !isDigit2 {
-                    return false
-                }
-                else if !isDigit1 && isDigit2 {
-                    return true
-                }
-            }
-            return r1 < r2
-        }
-        else if pinyin1 != "" && pinyin2 == "" {
-            return false
-        }
-        else if pinyin1 == "" && pinyin2 != "" {
-            return true
-        }
-        return pinyin1 < pinyin2
-    }
-    return length1 < length2
+	// 顺序依次为：其他字符、数字、字母、汉字
+	var r1, r2 rune
+	var pinyin1, pinyin2 string
+	for i := 0; i < minLength; i++ {
+		r1, r2 = filename1[i], filename2[i]
+		// 字符一样，跳过，比较下一个
+		if r1 == r2 {
+			continue
+		}
+		pinyin1 = utils.GetPinYin(r1)
+		pinyin2 = utils.GetPinYin(r2)
+		if pinyin1 == "" && pinyin2 == "" {
+			// 两个字符都不是汉字
+			isLetter1 := utils.IsLetter(r1)
+			isLetter2 := utils.IsLetter(r2)
+			if isLetter1 && !isLetter2 {
+				return false
+			} else if !isLetter1 && isLetter2 {
+				return true
+			} else if !isLetter1 && !isLetter2 {
+				// 两个字符虽不是汉字，又不是字母
+				isDigit1 := utils.IsDigit(r1)
+				isDigit2 := utils.IsDigit(r2)
+				if isDigit1 && !isDigit2 {
+					return false
+				} else if !isDigit1 && isDigit2 {
+					return true
+				}
+			}
+			return r1 < r2
+		} else if pinyin1 != "" && pinyin2 == "" {
+			return false
+		} else if pinyin1 == "" && pinyin2 != "" {
+			return true
+		}
+		return pinyin1 < pinyin2
+	}
+	return length1 < length2
 }
