@@ -1,12 +1,13 @@
 package myspace
 
 import (
-	"fmt"
+	// "fmt"
+    "sort"
 	. "github.com/farseer810/file-manager/controller/vo/statuscode"
 	"github.com/farseer810/file-manager/inject"
 	"github.com/farseer810/file-manager/model/constant/fileinfotype"
 	"github.com/farseer810/file-manager/service"
-	"github.com/farseer810/file-manager/utils"
+	// "github.com/farseer810/file-manager/utils"
 	"github.com/gin-gonic/gin"
 	"path/filepath"
 )
@@ -31,12 +32,12 @@ func (m *MySpaceController) List() gin.HandlerFunc {
 		}
 		currentUser := m.UserService.GetCurrentUser(ctx)
 		fileInfos := m.FileInfoService.List(currentUser.Id, directoryPath, searchWord)
-		//sort.SliceStable(fileInfos, func(i, j int) bool {
-		//	return fileInfos[i].Less(fileInfos[j])
-		//})
-		for _, fileInfo := range fileInfos {
-			fmt.Printf("%s 拼音：%s\n", fileInfo.Filename, utils.GetPinYin([]rune(fileInfo.Filename)[0]))
-		}
+		sort.SliceStable(fileInfos, func(i, j int) bool {
+			return fileInfos[i].Less(fileInfos[j])
+		})
+		// for _, fileInfo := range fileInfos {
+		// 	fmt.Printf("%s 拼音：%s\n", fileInfo.Filename, utils.GetPinYin([]rune(fileInfo.Filename)[0]))
+		// }
 		return Success.AddField("files", fileInfos)
 	})
 	return handler
