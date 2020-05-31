@@ -14,6 +14,7 @@ require (
 	github.com/lestrrat-go/strftime v1.0.1 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
+	github.com/mozillazg/go-pinyin v0.17.0
 	github.com/sirupsen/logrus v1.6.0
 	golang.org/x/crypto v0.0.0-20200302210943-78000ba7a073
 )

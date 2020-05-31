@@ -3,6 +3,7 @@ package myspace
 import (
 	. "github.com/farseer810/file-manager/controller/vo/statuscode"
 	"github.com/farseer810/file-manager/model"
+	"github.com/farseer810/file-manager/model/constant/fileinfotype"
 	"github.com/gin-gonic/gin"
 	"path/filepath"
 	"strings"
@@ -43,7 +44,11 @@ func (m *MySpaceController) AddDirectory() gin.HandlerFunc {
 		}
 
 		// 检查文件是否已存在
-		if m.FileInfoService.Get(currentUser.Id, filepath.Join(directoryPath, form.Filename)) != nil {
+		fileInfo := m.FileInfoService.Get(currentUser.Id, filepath.Join(directoryPath, form.Filename))
+		if fileInfo != nil {
+			if fileInfo.Type == fileinfotype.Directory {
+				return Success
+			}
 			return FileExists
 		}
 
@@ -87,7 +92,7 @@ func (m *MySpaceController) ListDirectories() gin.HandlerFunc {
 			directoryMap[fileInfo.DirectoryPath].HasSubDirectories = true
 		}
 
-		directories := make([]interface{}, 0, len(directoryMap))
+		directories := make([]*model.DirectoryInfo, 0, len(directoryMap))
 		for _, directoryInfo := range directoryMap {
 			directories = append(directories, directoryInfo)
 		}

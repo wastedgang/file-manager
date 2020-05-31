@@ -21,3 +21,13 @@ type FileInfo struct {
 func (FileInfo) TableName() string {
 	return "file_info"
 }
+
+func (f *FileInfo) Less(f2 *FileInfo) bool {
+	if f.Type == fileinfotype.Directory && f2.Type != fileinfotype.Directory {
+		return true
+	}
+	if f.Type != fileinfotype.Directory && f2.Type == fileinfotype.Directory {
+		return false
+	}
+	return false
+}
