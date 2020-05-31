@@ -29,5 +29,7 @@ func (f *FileInfo) Less(f2 *FileInfo) bool {
 	if f.Type != fileinfotype.Directory && f2.Type == fileinfotype.Directory {
 		return false
 	}
+	//filename1 := []rune(f.Filename)
+	//filename2 := []rune(f2.Filename)
 	return false
 }

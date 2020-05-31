@@ -35,7 +35,7 @@ func (m *MySpaceController) List() gin.HandlerFunc {
 		//	return fileInfos[i].Less(fileInfos[j])
 		//})
 		for _, fileInfo := range fileInfos {
-			fmt.Printf("%s %c\n", fileInfo.Filename, utils.GetFirstPinYinLetter(fileInfo.Filename))
+			fmt.Printf("%s 拼音：%s\n", fileInfo.Filename, utils.GetPinYin([]rune(fileInfo.Filename)[0]))
 		}
 		return Success.AddField("files", fileInfos)
 	})
