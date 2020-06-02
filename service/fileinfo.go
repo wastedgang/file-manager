@@ -8,6 +8,7 @@ import (
 	"github.com/farseer810/file-manager/model/constant/fileinfotype"
 	"github.com/jinzhu/gorm"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -64,6 +65,8 @@ func (s *FileInfoService) Get(userId int, path string) *model.FileInfo {
 	basename := filepath.Base(path)
 	direname := filepath.Dir(path)
 
+	fmt.Println(path, basename, direname)
+
 	var fileInfo model.FileInfo
 	db := dao.DB.Where("`user_id`=? AND `directory_path`=? AND `filename`=?", userId, direname, basename)
 	if err = db.Find(&fileInfo).Error; err != nil {
@@ -119,12 +122,72 @@ func (s *FileInfoService) Rename(oldFileInfo *model.FileInfo, newFilename string
 	}()
 
 	now := time.Now()
-	if err = tx.Model(oldFileInfo).Updates(map[string]interface{}{"filename": newFilename, "update_time": now}).Error; err != nil {
+	updates := map[string]interface{}{"filename": newFilename, "update_time": now}
+	if err = tx.Model(&model.FileInfo{Id: oldFileInfo.Id}).Updates(updates).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 	if oldFileInfo.Type == fileinfotype.Directory {
-		// TODO: 处理子文件夹
+		// 处理子文件夹
+		oldDirectoryPath := filepath.Join(oldFileInfo.DirectoryPath, oldFileInfo.Filename)
+		newDirectoryPath := filepath.Join(oldFileInfo.DirectoryPath, newFilename)
+		var subFiles []*model.FileInfo
+		directoryPathParam := fmt.Sprintf("%s%%", oldDirectoryPath)
+		db := tx.Where("`user_id`=? AND `directory_path` LIKE ?", oldFileInfo.UserId, directoryPathParam)
+		if err = db.Find(&subFiles).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		for _, subFile := range subFiles {
+			newSubDirectoryPath := strings.Replace(subFile.DirectoryPath, oldDirectoryPath, newDirectoryPath, 1)
+			if err = tx.Model(&subFile).Update("directory_path", newSubDirectoryPath).Error; err != nil {
+				tx.Rollback()
+				return err
+			}
+		}
+	}
+
+	return tx.Commit().Error
+}
+
+func (s *FileInfoService) Delete(userId int, directoryPath string, filenames []string) error {
+	var err error
+	// 开事务
+	tx := dao.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		}
+	}()
+
+	var fileInfos []*model.FileInfo
+	db := tx.Where("`user_id`=? AND `directory_path`=? AND filename IN (?)", userId, directoryPath, filenames)
+	if err = db.Find(&fileInfos).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// 删除指定文件
+	db = tx.Where("`user_id`=? AND `directory_path`=? AND filename IN (?)", userId, directoryPath, filenames)
+	if err = db.Delete(model.FileInfo{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// 删除子文件夹
+	for _, fileInfo := range fileInfos {
+		if fileInfo.Type != fileinfotype.Directory {
+			continue
+		}
+		subDirectoryPath := filepath.Join(fileInfo.DirectoryPath, fileInfo.Filename)
+		directoryPathParam := fmt.Sprintf("%s%%", subDirectoryPath)
+		db := tx.Where("`user_id`=? AND `directory_path` LIKE ?", userId, directoryPathParam)
+		if err = db.Delete(model.FileInfo{}).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	return tx.Commit().Error
