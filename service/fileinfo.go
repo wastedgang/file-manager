@@ -151,6 +151,15 @@ func (s *FileInfoService) Rename(oldFileInfo *model.FileInfo, newFilename string
 	return tx.Commit().Error
 }
 
+func (s *FileInfoService) ListByFilenames(userId int, directoryPath string, filenames []string) []*model.FileInfo {
+	var fileInfos []*model.FileInfo
+	db := dao.DB.Where("`user_id`=? AND `directory_path`=? AND filename IN (?)", userId, directoryPath, filenames)
+	if err := db.Find(&fileInfos).Error; err != nil {
+		panic(err)
+	}
+	return fileInfos
+}
+
 func (s *FileInfoService) Delete(userId int, directoryPath string, filenames []string) error {
 	var err error
 	// 开事务
@@ -162,15 +171,9 @@ func (s *FileInfoService) Delete(userId int, directoryPath string, filenames []s
 		}
 	}()
 
-	var fileInfos []*model.FileInfo
-	db := tx.Where("`user_id`=? AND `directory_path`=? AND filename IN (?)", userId, directoryPath, filenames)
-	if err = db.Find(&fileInfos).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
+	fileInfos := s.ListByFilenames(userId, directoryPath, filenames)
 	// 删除指定文件
-	db = tx.Where("`user_id`=? AND `directory_path`=? AND filename IN (?)", userId, directoryPath, filenames)
+	db := tx.Where("`user_id`=? AND `directory_path`=? AND filename IN (?)", userId, directoryPath, filenames)
 	if err = db.Delete(model.FileInfo{}).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -189,6 +192,25 @@ func (s *FileInfoService) Delete(userId int, directoryPath string, filenames []s
 			return err
 		}
 	}
+
+	return tx.Commit().Error
+}
+
+func (s *FileInfoService) Copy(userId int, oldDirectoryPath string, filenames []string, newDirectoryPath string) error {
+	if oldDirectoryPath == newDirectoryPath || len(filenames) == 0 {
+		return nil
+	}
+
+	// 开事务
+	tx := dao.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		}
+	}()
+
+	//fileInfos := s.ListByFilenames(userId, oldDirectoryPath, filenames)
 
 	return tx.Commit().Error
 }

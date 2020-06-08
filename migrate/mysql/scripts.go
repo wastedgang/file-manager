@@ -72,7 +72,7 @@ var migrations = []*migrate.MigrationScript{
 			"KEY `index_store_directory_path`(`store_directory_path`),\n" +
 			"KEY `index_update_time`(`update_time`)\n" +
 			") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n",
-		DownScript: "DROP TABLE `store_space`\n",
+		DownScript: "DROP TABLE `store_file_info`\n",
 	},
 	{
 		Version:    5,
