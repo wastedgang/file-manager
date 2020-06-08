@@ -185,8 +185,8 @@ func (s *FileInfoService) Delete(userId int, directoryPath string, filenames []s
 			continue
 		}
 		subDirectoryPath := filepath.Join(fileInfo.DirectoryPath, fileInfo.Filename)
-		directoryPathParam := fmt.Sprintf("%s%%", subDirectoryPath)
-		db := tx.Where("`user_id`=? AND `directory_path` LIKE ?", userId, directoryPathParam)
+		directoryPathParam := fmt.Sprintf("%s/%%", subDirectoryPath)
+		db := tx.Where("`user_id`=? AND (`directory_path`=?` OR directory_path` LIKE ?)", userId, directoryPath, directoryPathParam)
 		if err = db.Delete(model.FileInfo{}).Error; err != nil {
 			tx.Rollback()
 			return err
