@@ -22,6 +22,12 @@ func (m *MySpaceController) Copy() gin.HandlerFunc {
 		if err = ctx.ShouldBind(&form); err != nil {
 			return BadRequest
 		}
+		if form.SourceDirectoryPath == "" || strings.HasSuffix(form.SourceDirectoryPath, "/") && form.SourceDirectoryPath != "/" {
+			return BadRequest
+		}
+		if form.TargetDirectoryPath == "" || strings.HasSuffix(form.TargetDirectoryPath, "/") && form.TargetDirectoryPath != "/" {
+			return BadRequest
+		}
 		var filenames []string
 		if err = json.Unmarshal([]byte(form.Filenames), &filenames); err != nil {
 			return BadRequest

@@ -160,6 +160,16 @@ func (s *FileInfoService) ListByFilenames(userId int, directoryPath string, file
 	return fileInfos
 }
 
+func (s *FileInfoService) ListSubFiles(userId int, directoryPath string) []*model.FileInfo {
+	var fileInfos []*model.FileInfo
+	directoryPathParam := fmt.Sprintf("%s/%%", directoryPath)
+	db := dao.DB.Where("`user_id`=? AND (`directory_path`=? OR `directory_path` LIKE ?)", userId, directoryPath, directoryPathParam)
+	if err := db.Find(&fileInfos).Error; err != nil {
+		panic(err)
+	}
+	return fileInfos
+}
+
 func (s *FileInfoService) Delete(userId int, directoryPath string, filenames []string) error {
 	var err error
 	// 开事务
@@ -186,7 +196,7 @@ func (s *FileInfoService) Delete(userId int, directoryPath string, filenames []s
 		}
 		subDirectoryPath := filepath.Join(fileInfo.DirectoryPath, fileInfo.Filename)
 		directoryPathParam := fmt.Sprintf("%s/%%", subDirectoryPath)
-		db := tx.Where("`user_id`=? AND (`directory_path`=?` OR directory_path` LIKE ?)", userId, directoryPath, directoryPathParam)
+		db := tx.Where("`user_id`=? AND (`directory_path`=? OR `directory_path` LIKE ?)", userId, subDirectoryPath, directoryPathParam)
 		if err = db.Delete(model.FileInfo{}).Error; err != nil {
 			tx.Rollback()
 			return err
@@ -212,5 +222,46 @@ func (s *FileInfoService) Copy(userId int, oldDirectoryPath string, filenames []
 
 	//fileInfos := s.ListByFilenames(userId, oldDirectoryPath, filenames)
 
+	return tx.Commit().Error
+}
+
+func (s *FileInfoService) Move(userId int, oldDirectoryPath string, filenames []string, newDirectoryPath string) error {
+	// 原地移动即不需要移动
+	if oldDirectoryPath == newDirectoryPath || len(filenames) == 0 {
+		return nil
+	}
+
+	// 开事务
+	tx := dao.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		}
+	}()
+
+	// 查询欲移动文件的信息列表
+	fileInfos := s.ListByFilenames(userId, oldDirectoryPath, filenames)
+	if len(fileInfos) == 0 {
+		return nil
+	}
+	// 若为文件夹，则该文件夹下的所有子文件夹与子文件均需要移动
+	for _, fileInfo := range fileInfos {
+		if fileInfo.Type != fileinfotype.Directory {
+			continue
+		}
+		subFileInfos := s.ListSubFiles(userId, filepath.Join(fileInfo.DirectoryPath, fileInfo.Filename))
+		if len(subFileInfos) == 0 {
+			continue
+		}
+		fileInfos = append(fileInfos, subFileInfos...)
+	}
+
+	now := time.Now()
+	for _, fileInfo := range fileInfos {
+		fileInfo.DirectoryPath = strings.Replace(fileInfo.DirectoryPath, oldDirectoryPath, newDirectoryPath, 1)
+		fileInfo.UpdateTime = now
+		tx.Save(&fileInfo)
+	}
 	return tx.Commit().Error
 }
