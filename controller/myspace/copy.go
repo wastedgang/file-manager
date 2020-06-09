@@ -1,9 +1,8 @@
 package myspace
 
 import (
-	"encoding/json"
 	. "github.com/farseer810/file-manager/controller/vo/statuscode"
-	"github.com/farseer810/file-manager/model"
+	"github.com/farseer810/file-manager/model/constant/fileactiontype"
 	"github.com/farseer810/file-manager/model/constant/fileinfotype"
 	"github.com/gin-gonic/gin"
 	"path/filepath"
@@ -16,8 +15,9 @@ func (m *MySpaceController) Copy() gin.HandlerFunc {
 		var err error
 		var form struct {
 			SourceDirectoryPath string `form:"source_directory_path" binding:"required,min=1"`
-			Filenames           string `form:"filenames" binding:"required,min=2"`
+			Filename            string `form:"filename" binding:"required,min=2"`
 			TargetDirectoryPath string `form:"target_directory_path" binding:"required,min=1"`
+			ActionType          int    `form:"action" binding:"required,oneof=rename override"`
 		}
 		if err = ctx.ShouldBind(&form); err != nil {
 			return BadRequest
@@ -28,44 +28,29 @@ func (m *MySpaceController) Copy() gin.HandlerFunc {
 		if form.TargetDirectoryPath == "" || strings.HasSuffix(form.TargetDirectoryPath, "/") && form.TargetDirectoryPath != "/" {
 			return BadRequest
 		}
-		var filenames []string
-		if err = json.Unmarshal([]byte(form.Filenames), &filenames); err != nil {
-			return BadRequest
-		}
-		if len(filenames) == 0 {
-			return Success
-		}
 
+		actionType := fileactiontype.FileActionType(form.ActionType)
 		// 检查目录是否存在
 		if !m.FileInfoService.IsDirectoryExists(currentUser.Id, form.SourceDirectoryPath) ||
 			!m.FileInfoService.IsDirectoryExists(currentUser.Id, form.TargetDirectoryPath) {
 			return DirectoryNotExists
 		}
 
-		// 检查欲复制的文件列表
-		fileInfos := m.FileInfoService.ListByFilenames(currentUser.Id, form.SourceDirectoryPath, filenames)
-		if len(fileInfos) == 0 {
-			return Success
+		// 获取欲复制的文件信息
+		sourceFileInfo := m.FileInfoService.Get(currentUser.Id, filepath.Join(form.SourceDirectoryPath, form.Filename))
+		if sourceFileInfo == nil {
+			return FileNotExists
 		}
-		// 检查目标文件夹是否在欲复制文件夹里
-		var directoryInfos []*model.FileInfo
-		for _, fileInfo := range fileInfos {
-			if fileInfo.Type != fileinfotype.Directory {
-				continue
-			}
-			directoryInfos = append(directoryInfos, fileInfo)
-		}
-		if len(directoryInfos) != 0 {
-			for _, directoryInfo := range directoryInfos {
-				directoryPath := filepath.Join(directoryInfo.DirectoryPath, directoryInfo.Filename)
-				if strings.HasPrefix(form.TargetDirectoryPath, directoryPath) {
-					return TargetFolderInsideSourceFolder
-				}
+		// 检查目标文件夹是否在欲移动文件夹里
+		if sourceFileInfo.Type == fileinfotype.Directory {
+			directoryPath := filepath.Join(sourceFileInfo.DirectoryPath, sourceFileInfo.Filename)
+			if strings.HasPrefix(form.TargetDirectoryPath, directoryPath) {
+				return TargetFolderInsideSourceFolder
 			}
 		}
 
 		// 复制
-		err = m.FileInfoService.Copy(currentUser.Id, form.SourceDirectoryPath, filenames, form.TargetDirectoryPath)
+		err = m.FileInfoService.Copy(sourceFileInfo, form.TargetDirectoryPath, actionType)
 		if err != nil {
 			return InternalServerError
 		}

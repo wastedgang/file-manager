@@ -1,7 +1,6 @@
 package myspace
 
 import (
-	"fmt"
 	. "github.com/farseer810/file-manager/controller/vo/statuscode"
 	"github.com/gin-gonic/gin"
 	"io"
@@ -27,7 +26,6 @@ func (m *MySpaceController) Upload() gin.HandlerFunc {
 		}
 
 		// 检查是否存在存储空间
-		fmt.Println(m.StoreSpaceService.List())
 		if len(m.StoreSpaceService.List()) == 0 {
 			return StoreSpaceNotExists.SetMessage("请先添加存储空间")
 		}

@@ -5,6 +5,7 @@ import (
 	"github.com/farseer810/file-manager/dao"
 	"github.com/farseer810/file-manager/inject"
 	"github.com/farseer810/file-manager/model"
+	"github.com/farseer810/file-manager/model/constant/fileactiontype"
 	"github.com/farseer810/file-manager/model/constant/fileinfotype"
 	"github.com/jinzhu/gorm"
 	"path/filepath"
@@ -45,6 +46,35 @@ func (s *FileInfoService) List(userId int, directoryPath string, searchWord stri
 	return fileInfos
 }
 
+// GetAvailableFilename 生成未使用的文件名
+func (s *FileInfoService) GetAvailableFilename(userId int, directoryPath, filename string) string {
+	fileExtension := filepath.Ext(filename)
+	filenameWithoutExtension := filename[0 : len(filename)-len(fileExtension)]
+	fileInfos := s.List(userId, directoryPath, filenameWithoutExtension)
+	fileIndex := 0
+	var mySpaceFilename string
+	for {
+		if fileIndex == 0 {
+			mySpaceFilename = filenameWithoutExtension + fileExtension
+		} else {
+			mySpaceFilename = filenameWithoutExtension + fmt.Sprintf("(%d)%s", fileIndex, fileExtension)
+		}
+
+		found := false
+		for _, fileInfo := range fileInfos {
+			if fileInfo.Filename == mySpaceFilename {
+				found = true
+				break
+			}
+		}
+		if !found {
+			break
+		}
+		fileIndex++
+	}
+	return mySpaceFilename
+}
+
 func (s *FileInfoService) IsDirectoryExists(userId int, path string) bool {
 	// 忽略根目录
 	if path == "/" {
@@ -64,8 +94,6 @@ func (s *FileInfoService) Get(userId int, path string) *model.FileInfo {
 	}
 	basename := filepath.Base(path)
 	direname := filepath.Dir(path)
-
-	fmt.Println(path, basename, direname)
 
 	var fileInfo model.FileInfo
 	db := dao.DB.Where("`user_id`=? AND `directory_path`=? AND `filename`=?", userId, direname, basename)
@@ -132,8 +160,8 @@ func (s *FileInfoService) Rename(oldFileInfo *model.FileInfo, newFilename string
 		oldDirectoryPath := filepath.Join(oldFileInfo.DirectoryPath, oldFileInfo.Filename)
 		newDirectoryPath := filepath.Join(oldFileInfo.DirectoryPath, newFilename)
 		var subFiles []*model.FileInfo
-		directoryPathParam := fmt.Sprintf("%s%%", oldDirectoryPath)
-		db := tx.Where("`user_id`=? AND `directory_path` LIKE ?", oldFileInfo.UserId, directoryPathParam)
+		directoryPathParam := fmt.Sprintf("%s/%%", oldDirectoryPath)
+		db := tx.Where("`user_id`=? AND (`directory_path`=? OR `directory_path` LIKE ?)", oldFileInfo.UserId, oldDirectoryPath, directoryPathParam)
 		if err = db.Find(&subFiles).Error; err != nil {
 			tx.Rollback()
 			return err
@@ -206,11 +234,13 @@ func (s *FileInfoService) Delete(userId int, directoryPath string, filenames []s
 	return tx.Commit().Error
 }
 
-func (s *FileInfoService) Copy(userId int, oldDirectoryPath string, filenames []string, newDirectoryPath string) error {
-	if oldDirectoryPath == newDirectoryPath || len(filenames) == 0 {
+func (s *FileInfoService) Copy(sourceFileInfo *model.FileInfo, targetDirectoryPath string, actionType fileactiontype.FileActionType) error {
+	if sourceFileInfo.DirectoryPath == targetDirectoryPath && actionType == fileactiontype.Override {
 		return nil
 	}
 
+	userId := sourceFileInfo.UserId
+	var err error
 	// 开事务
 	tx := dao.DB.Begin()
 	defer func() {
@@ -220,8 +250,73 @@ func (s *FileInfoService) Copy(userId int, oldDirectoryPath string, filenames []
 		}
 	}()
 
-	//fileInfos := s.ListByFilenames(userId, oldDirectoryPath, filenames)
+	targetFilename := sourceFileInfo.Filename
+	// 删除需要覆盖的文件以及其子文件
+	if actionType == fileactiontype.Override {
+		// 删除需要覆盖的文件
+		db := tx.Where("`user_id`=? AND `directory_path`=? AND `filename`=?", userId, targetDirectoryPath, sourceFileInfo.Filename)
+		if err = db.Delete(model.FileInfo{}).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+		// 如果有子文件，也一并删除
+		directoryPathParam := fmt.Sprintf("%s/%s/%%", targetDirectoryPath, sourceFileInfo.Filename)
+		db = tx.Where("`user_id`=? AND `directory_path` LIKE ?", userId, directoryPathParam)
+		if err = db.Delete(model.FileInfo{}).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	} else {
+		// 计算新文件名
+		targetFilename = s.GetAvailableFilename(userId, targetDirectoryPath, sourceFileInfo.Filename)
+	}
 
+	now := time.Now()
+	// 先复制指定文件
+	targetFileInfo := &model.FileInfo{
+		ContentHash:   sourceFileInfo.ContentHash,
+		UserId:        sourceFileInfo.UserId,
+		Type:          sourceFileInfo.Type,
+		DirectoryPath: targetDirectoryPath,
+		Filename:      targetFilename,
+		FileSize:      sourceFileInfo.FileSize,
+		MimeType:      sourceFileInfo.MimeType,
+		UpdateTime:    now,
+		CreateTime:    now,
+	}
+	if err := dao.DB.Create(&targetFileInfo).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	if sourceFileInfo.Type != fileinfotype.Directory {
+		return tx.Commit().Error
+	}
+
+	// 若为文件夹，则该文件夹下的所有子文件夹与子文件均需要复制
+	sourceFilePath := filepath.Join(sourceFileInfo.DirectoryPath, sourceFileInfo.Filename)
+	subFileInfos := s.ListSubFiles(userId, sourceFilePath)
+	if len(subFileInfos) == 0 {
+		return tx.Commit().Error
+	}
+
+	for _, fileInfo := range subFileInfos {
+		subFileDirectoryPath := filepath.Join(targetDirectoryPath, targetFilename)
+		newFileInfo := &model.FileInfo{
+			ContentHash:   fileInfo.ContentHash,
+			UserId:        fileInfo.UserId,
+			Type:          fileInfo.Type,
+			DirectoryPath: strings.Replace(fileInfo.DirectoryPath, sourceFilePath, subFileDirectoryPath, 1),
+			Filename:      fileInfo.Filename,
+			FileSize:      fileInfo.FileSize,
+			MimeType:      fileInfo.MimeType,
+			UpdateTime:    now,
+			CreateTime:    now,
+		}
+		if err := dao.DB.Create(&newFileInfo).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
 	return tx.Commit().Error
 }
 

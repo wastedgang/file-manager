@@ -25,6 +25,7 @@ var (
 	FileNotExists                  = &Response{Code: "003003", Message: "文件不存在"}
 	FileExists                     = &Response{Code: "003004", Message: "文件已存在"}
 	TargetFolderInsideSourceFolder = &Response{Code: "003005", Message: "目标文件夹是源文件夹的子文件夹"}
+	InvalidFileAction              = &Response{Code: "003006", Message: "非法文件操作"}
 
 	StoreSpaceNotExists = &Response{Code: "004001", Message: "存储空间不存在"}
 	StoreSpaceExists    = &Response{Code: "004002", Message: "存储空间已存在"}

@@ -59,35 +59,6 @@ func (s *StoreFileService) Get(contentHash string) *model.StoreFileInfo {
 	return &storeFileInfo
 }
 
-// GetAvailableFilename 生成未使用的文件名
-func (s *StoreFileService) GetAvailableFilename(userId int, directoryPath, filename string) string {
-	fileExtension := filepath.Ext(filename)
-	filenameWithoutExtension := filename[0 : len(filename)-len(fileExtension)]
-	fileInfos := s.MySpaceService.List(userId, directoryPath, filenameWithoutExtension)
-	fileIndex := 0
-	var mySpaceFilename string
-	for {
-		if fileIndex == 0 {
-			mySpaceFilename = filenameWithoutExtension + fileExtension
-		} else {
-			mySpaceFilename = filenameWithoutExtension + fmt.Sprintf("(%d)%s", fileIndex, fileExtension)
-		}
-
-		found := false
-		for _, fileInfo := range fileInfos {
-			if fileInfo.Filename == mySpaceFilename {
-				found = true
-				break
-			}
-		}
-		if !found {
-			break
-		}
-		fileIndex++
-	}
-	return mySpaceFilename
-}
-
 func (s *StoreFileService) Save(
 	userId int,
 	part *multipart.Part,
@@ -171,7 +142,7 @@ func (s *StoreFileService) Save(
 	}
 
 	// 添加记录到我的空间
-	mySpaceFilename := s.GetAvailableFilename(userId, directoryPath, part.FileName())
+	mySpaceFilename := s.MySpaceService.GetAvailableFilename(userId, directoryPath, part.FileName())
 	fileInfo := model.FileInfo{
 		ContentHash:   contentHash,
 		UserId:        userId,
